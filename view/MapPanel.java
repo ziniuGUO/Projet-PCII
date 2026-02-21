@@ -3,7 +3,7 @@ package view;
 import java.awt.*;
 import javax.swing.*;
 import model.Map;
-
+import model.Personnage;
 /**
  * Panel d'affichage simplifie de la Map avec code couleur + noms de ressources.
  * 
@@ -44,6 +44,20 @@ public class MapPanel extends JPanel {
     private int selectedX = -1;
     private int selectedY = -1;
 
+    // Personnage survole (pour afficher ses infos)
+    private Personnage hoveredPersonnage = null;
+
+    // Personnage selectionne (pour deplacement)
+    private Personnage selectedPersonnage = null;
+
+    public void setSelectedPersonnage(Personnage p) {
+        this.selectedPersonnage = p;
+        repaint();
+    }
+
+    public Personnage getSelectedPersonnage() {
+        return selectedPersonnage;
+    }
     // ── Constructeur ───────────────────────────────────────────────────────────
     public MapPanel(Map gameMap) {
         this.gameMap = gameMap;
@@ -67,7 +81,10 @@ public class MapPanel extends JPanel {
         this.selectedY = -1;
         repaint();
     }
-
+    public void setHoveredPersonnage(Personnage p) {
+        this.hoveredPersonnage = p;
+        repaint();
+    }
     public int getTileSize() {
         return TILE_SIZE;
     }
@@ -90,12 +107,61 @@ public class MapPanel extends JPanel {
 
         drawTitle(g2);
         drawTiles(g2);
+        drawPersonnages(g2);
         drawGrid(g2);
+        drawSelectedPersonnage(g2);
         drawSelection(g2);
         drawTooltip(g2);
         drawLegend(g2);
     }
 
+    // ── Personnages ───────────────────────────────────────────────────────────
+    private void drawPersonnages(Graphics2D g2) {
+        for (Personnage p : gameMap.getPersonnages()) {
+            int px = BORDER_PAD + p.getX() * TILE_SIZE;
+            int py = BORDER_PAD + TITLE_H + p.getY() * TILE_SIZE;
+
+            int margin = 8;
+            int size = TILE_SIZE - margin * 2;
+            int cx = px + margin;
+            int cy = py + margin;
+
+            // Ombre
+            g2.setColor(new Color(0, 0, 0, 90));
+            g2.fillOval(cx + 2, cy + 3, size, size);
+
+            // Corps (cercle)
+            g2.setColor(new Color(60, 120, 200));
+            g2.fillOval(cx, cy, size, size);
+
+            // Contour
+            g2.setColor(new Color(255, 255, 255, 180));
+            g2.setStroke(new BasicStroke(2f));
+            g2.drawOval(cx, cy, size, size);
+            g2.setStroke(new BasicStroke(1f));
+
+            // Lettre "V"
+            g2.setFont(new Font("SansSerif", Font.BOLD, 16));
+            g2.setColor(Color.WHITE);
+            FontMetrics fm = g2.getFontMetrics();
+            String letter = "V";
+            int tx = px + (TILE_SIZE - fm.stringWidth(letter)) / 2;
+            int ty = py + (TILE_SIZE + fm.getAscent()) / 2 - 4;
+            g2.drawString(letter, tx, ty);
+        }
+    }
+
+    private void drawSelectedPersonnage(Graphics2D g2) {
+        if (selectedPersonnage == null) return;
+
+        int px = BORDER_PAD + selectedPersonnage.getX() * TILE_SIZE;
+        int py = BORDER_PAD + TITLE_H + selectedPersonnage.getY() * TILE_SIZE;
+
+        g2.setColor(new Color(255, 215, 0, 180));
+        g2.setStroke(new BasicStroke(4f));
+        g2.drawOval(px + 4, py + 4, TILE_SIZE - 8, TILE_SIZE - 8);
+        g2.setStroke(new BasicStroke(1f));
+    }
     // ── Titre ──────────────────────────────────────────────────────────────────
     private void drawTitle(Graphics2D g2) {
         String title = "Carte du Royaume";
@@ -217,17 +283,29 @@ public class MapPanel extends JPanel {
     // ── Tooltip ────────────────────────────────────────────────────────────────
     private void drawTooltip(Graphics2D g2) {
         if (selectedX < 0) return;
-        int type = gameMap.getTerrainAt(selectedX, selectedY);
-        String typeName = switch (type) {
-            case 1 -> "Herbe";
-            case 2 -> "Batiment";
-            case 3 -> "Foret -> Bois";
-            case 4 -> "Mine -> Fer";
-            case 5 -> "Gisement -> Or";
-            case 6 -> "Cueillette -> Nourriture";
-            default -> "Inconnu";
-        };
-        String text = String.format("(%d, %d)  -  %s", selectedX, selectedY, typeName);
+        String text;
+        if (hoveredPersonnage != null) {
+            text = String.format(
+                    "%s  |  %d★  |  Action: %s  |  (%d, %d)",
+                    hoveredPersonnage.getNom(),
+                    hoveredPersonnage.getRareteEtoiles(),
+                    hoveredPersonnage.getActionCourante().getLabel(),
+                    hoveredPersonnage.getX(),
+                    hoveredPersonnage.getY()
+            );
+        } else {
+            int type = gameMap.getTerrainAt(selectedX, selectedY);
+            String typeName = switch (type) {
+                case 1 -> "Herbe";
+                case 2 -> "Batiment";
+                case 3 -> "Foret -> Bois";
+                case 4 -> "Mine -> Fer";
+                case 5 -> "Gisement -> Or";
+                case 6 -> "Cueillette -> Nourriture";
+                default -> "Inconnu";
+            };
+            text = String.format("(%d, %d)  -  %s", selectedX, selectedY, typeName);
+        }
 
         g2.setFont(FONT_TOOLTIP);
         FontMetrics fm = g2.getFontMetrics();

@@ -1,4 +1,6 @@
 package model;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Classe representant la carte du jeu.
@@ -26,6 +28,9 @@ public class Map {
     private final int height;
     private final int[][] terrain;
 
+    // Personnages (version minimale)
+    private final List<Personnage> personnages = new ArrayList<>();
+
     /**
      * Constructeur : cree une map 20x15 par defaut avec
      * quelques zones de ressources pre-placees.
@@ -35,8 +40,22 @@ public class Map {
         this.height  = height;
         this.terrain = new int[height][width];
         initializeDefaultMap();
+        // Personnage de demo (a remplacer plus tard par ton systeme d'invocation)
+        // Place-le sur une case d'herbe proche du centre.
+        personnages.add(new Personnage("Villageois", 1, 9, 7));
+    }
+    /** Retourne la liste des personnages. */
+    public List<Personnage> getPersonnages() {
+        return personnages;
     }
 
+    /** Retourne le personnage situe sur la case (x,y), ou null s'il n'y en a pas. */
+    public Personnage getPersonnageAt(int x, int y) {
+        for (Personnage p : personnages) {
+            if (p.getX() == x && p.getY() == y) return p;
+        }
+        return null;
+    }
     /**
      * Map par defaut avec :
      * - Herbe partout

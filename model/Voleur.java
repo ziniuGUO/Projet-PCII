@@ -1,54 +1,46 @@
 public class Voleur {
-
-    //attributs
     private int x;
     private int y;
-    private boolean enFuite;
 
-    //constructeur
     public Voleur(int x, int y) {
         this.x = x;
         this.y = y;
-        this.enFuite = false;
     }
 
-    //méthodes
-    //on souhaite créer une méthode qui prend en argument les coordonnées d'une ressource et qui fait avancer le voleur vers cette ressource
-    public void avancerVers(int xRessource, int yRessource) {
-        while (x != xRessource || y != yRessource) {
-            if (x < xRessource) {
-                x++;
-            } else if (x > xRessource) {
-                x--;
-            }
+    public int getX() {
+        return x;
+    }
 
-            if (y < yRessource) {
-                y++;
-            } else if (y > yRessource) {
-                y--;
+    public int getY() {
+        return y;
+    }
+
+    public void setPosition(int nx, int ny) {
+        this.x = nx;
+        this.y = ny;
+    }
+
+    // Avance d'un seul pas vers (tx, ty) : +/-1 en x et y par appel
+    public void avancerVers(int tx, int ty) {
+        synchronized (this) {
+            if (x == tx && y == ty) {
+                return;
             }
+            if (x < tx) x++; else if (x > tx) x--;
+            if (y < ty) y++; else if (y > ty) y--;
+            System.out.println("Coordonnées du voleur : (" + x + ", " + y + ")");
         }
     }
 
-    //cette méthode permet au voleur de "fuir" en quittant l'écran progressivement, quand le jour se lève
+    // Fuit d'un seul pas (appelé par la boucle principale à chaque seconde)
     public void fuir() {
-        this.enFuite = true;
-        while (x < 100 && y < 100) { // supposons que l'écran fait 100x100
-            x++;
-            y++;
+        synchronized (this) {
+            x -= 1;
+            y -= 1;
         }
     }
 
-    /* 
-    //on veut faire en sorte que le voleur soit arrêté lorsqu'un villageois le touche, ce qui se produit lorsque le voleur est à une distance de 1 ou moins d'un villageois
-    public boolean estArretePar(Villageois villageois) {
-        double distance = Math.sqrt(Math.pow(x - villageois.getX(), 2) + Math.pow(y - villageois.getY(), 2));
-        return distance <= 1;
-    */
-
-    //on veut faire en sorte qu'une ressource soit volée et disparaisse lorsque le voleur atteint les coordonnées de la ressource
-    public boolean aVoleRessource(int xRessource, int yRessource) {
-        return x == xRessource && y == yRessource;
+    public boolean aVoleRessource(int rx, int ry) {
+        return x == rx && y == ry;
     }
-    
 }

@@ -2,7 +2,7 @@ public class JourNuit extends Thread {
     private boolean isDay;
 
     public JourNuit() {
-        this.isDay = true; // Commence avec le jour
+        this.isDay = true; // Commence la simulation avec la nuit
     }
 
     public boolean getIsDay() {
@@ -12,21 +12,18 @@ public class JourNuit extends Thread {
     @Override
     public void run() {
         while (true) {
-            try {
-                Thread.sleep(10000); // Change de jour/nuit toutes les 2 minutes (120000 ms)
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
             isDay = !isDay; // Alterne entre jour et nuit
             if (isDay) {
                 System.out.println("Le jour se lève.");
             } else {
                 System.out.println("La nuit tombe.");
             }
+            try {
+                Thread.sleep(30000); // on change toutes les 30s (ajustable)
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
         }
-    }
-
-    public boolean isDay() {
-        return isDay;
     }
 }

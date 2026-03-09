@@ -39,14 +39,30 @@ public class Map {
         this.width   = width;
         this.height  = height;
         this.terrain = new int[height][width];
+        this.jourNuit = new JourNuit();
+        jourNuit.start(); // Lancer le thread de simulation jour/nuit
         initializeDefaultMap();
         // Personnage de demo (a remplacer plus tard par ton systeme d'invocation)
         // Place-le sur une case d'herbe proche du centre.
         personnages.add(new Personnage("Villageois", 1, 9, 7));
+        voleurs.add(new Voleur(10, 0));
+        voleurs.add(new Voleur(18, 8));
+        for (Voleur v : voleurs) {
+            v.start(); // Lancer le thread de chaque voleur
+        }
     }
     /** Retourne la liste des personnages. */
     public List<Personnage> getPersonnages() {
         return personnages;
+    }
+
+    /** Retourne la liste des voleurs. */
+    public List<Voleur> getVoleurs() {
+        return voleurs;
+    }
+
+    public boolean getIsDay() {
+        return jourNuit.getIsDay();
     }
 
     /** Retourne le personnage situe sur la case (x,y), ou null s'il n'y en a pas. */

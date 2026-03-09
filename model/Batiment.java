@@ -56,9 +56,17 @@ public class Batiment {
         this.estConstruit = true;
     }
 
-    // Getters et setters pour les attributs
+    // Getters et setters pour le nom du bâtiment
     public String getNom() {
         return nom;
+    }
+
+    // Getters pour la position du bâtiment
+    public int getX() {
+        return x;
+    }
+    public int getY() {
+        return y;
     }
 
     // Getters et setters pour les points de vie

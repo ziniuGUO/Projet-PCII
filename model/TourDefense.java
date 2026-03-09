@@ -5,9 +5,6 @@ public class TourDefense extends Batiment{
     public TourDefense(String nom, int pointsVie, int x, int y, int coutBois, int coutFer, int coutOr) {
         super(nom, pointsVie, x, y, coutBois, coutFer, coutOr);
     }
-    
-    /* points de vie de la tour */
-    protected int pointsVie = 100; // Attribut spécifique à la tour de défense pour représenter sa santé
 
     /* Getter pour la puissance d'attaque de la tour de défense */
     public int getPuissanceAttaque() {
@@ -17,11 +14,6 @@ public class TourDefense extends Batiment{
     /* Setter pour la puissance d'attaque de la tour de défense */
     public void setPuissanceAttaque(int puissanceAttaque) {
         this.puissanceAttaque = puissanceAttaque;
-    }
-
-    /* Méthode pour attaquer un voleur */
-    public void attaquerVoleur(Voleur voleur) {
-        voleur.subirAttaque(this.puissanceAttaque);
     }
 
     /* Méthode pour subir une attaque */

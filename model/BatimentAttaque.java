@@ -21,8 +21,8 @@ public class BatimentAttaque extends Thread {
             // Infliger des dégats aux voleurs dans la portée d'attaque du bâtiment
             if (batiment.estConstruit) {
             for (Voleur voleur : Map.getVoleurs()) {
-                if (voleur.x >= batiment.x - Batiment.porteeAttaque && voleur.x <= batiment.x + Batiment.porteeAttaque &&
-                    voleur.y >= batiment.y - Batiment.porteeAttaque && voleur.y <= batiment.y + Batiment.porteeAttaque) {
+                if (voleur.getX() >= batiment.getX() - Batiment.porteeAttaque && voleur.getX() <= batiment.getX() + Batiment.porteeAttaque &&
+                    voleur.getY() >= batiment.getY() - Batiment.porteeAttaque && voleur.getY() <= batiment.getY() + Batiment.porteeAttaque) {
                     voleur.subirAttaque(batiment.puissanceAttaque);
                 }
             }

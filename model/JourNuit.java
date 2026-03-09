@@ -1,3 +1,5 @@
+package model;
+
 public class JourNuit extends Thread {
     private boolean isDay;
 

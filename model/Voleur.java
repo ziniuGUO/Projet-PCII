@@ -1,3 +1,5 @@
+package model;
+
 public class Voleur {
     private int x;
     private int y;

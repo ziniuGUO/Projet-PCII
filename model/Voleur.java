@@ -1,8 +1,5 @@
 package model;
-<<<<<<< HEAD
 
-=======
->>>>>>> 937d9decfd39df9b1e295b6ecf587a70049c91e8
 public class Voleur {
     private int x;
     private int y;

@@ -6,9 +6,15 @@ public class Batiment {
     // Attributs communs à tous les bâtiments
     protected String nom;
     
+    // Indique si le bâtiment est construit ou non
     protected Boolean estConstruit;
 
+    // Points de vie du bâtiment, indiquant sa résistance aux attaques
     protected int pointsVie;
+
+    // Position du bâtiment sur la carte (coordonnées x et y)
+    protected int x;
+    protected int y;
 
     // Attributs de stockage pour les ressources
     protected int stockageBois;
@@ -28,10 +34,17 @@ public class Batiment {
     protected int coutOr;
     protected int coutNourriture;
 
+    // Attributs d'attaque, spécifiques à certains bâtiments comme la tour de défense
+    public static int puissanceAttaque = 10; // Dégats infligés par la tour de défense à chaque attaque
+    public static int porteeAttaque = 3; // Portée d'attaque de la tour de défense
+    public static int cadenceAttaque = 1; // Cadence d'attaque de la tour de défense (nombre d'attaques par tour par secondes)
+
     // Constructeur de la classe Batiment
-    public Batiment(String nom, int pointsVie, int coutBois, int coutFer, int coutOr) {
+    public Batiment(String nom, int pointsVie, int x, int y, int coutBois, int coutFer, int coutOr) {
         this.nom = nom;
         this.pointsVie = pointsVie;
+        this.x = x;
+        this.y = y;
         this.coutBois = coutBois;
         this.coutFer = coutFer;
         this.coutOr = coutOr;

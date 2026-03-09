@@ -23,7 +23,7 @@ public class BatimentAttaque extends Thread {
             for (Voleur voleur : Map.getVoleurs()) {
                 if (voleur.x >= batiment.x - Batiment.porteeAttaque && voleur.x <= batiment.x + Batiment.porteeAttaque &&
                     voleur.y >= batiment.y - Batiment.porteeAttaque && voleur.y <= batiment.y + Batiment.porteeAttaque) {
-                    voleur.subirAttaque(TourDefense.puissanceAttaque);
+                    voleur.subirAttaque(batiment.puissanceAttaque);
                 }
             }
             }

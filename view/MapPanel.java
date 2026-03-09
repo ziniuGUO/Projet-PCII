@@ -23,7 +23,8 @@ public class MapPanel extends JPanel {
     private static final int TITLE_H    = 50;
 
     // Code couleur
-    private static final Color COL_HERBE      = new Color(144, 190, 109);
+    private static final Color COL_HERBE_JOUR = new Color(144, 190, 109);
+    private static final Color COL_HERBE_NUIT = new Color( 82, 0,  171);
     private static final Color COL_BATIMENT   = new Color(160, 160, 160);
     private static final Color COL_BOIS       = new Color( 34, 139,  34); // Vert foret
     private static final Color COL_FER        = new Color(105, 105, 105); // Gris fonce
@@ -198,7 +199,11 @@ public class MapPanel extends JPanel {
 
         switch (type) {
             case 1: // Herbe
-                color = COL_HERBE;
+                if (gameMap.getIsDay()) {
+                    color = COL_HERBE_JOUR;
+                } else {
+                    color = COL_HERBE_NUIT;
+                }
                 break;
             case 2: // Batiment
                 color = COL_BATIMENT;
@@ -223,7 +228,12 @@ public class MapPanel extends JPanel {
                 label = "NOURRITURE";
                 break;
             default:
-                color = COL_HERBE;
+                if (gameMap.getIsDay()) {
+                    color = COL_HERBE_JOUR;
+                } else {
+                    color = COL_HERBE_NUIT;
+                }
+                break;
         }
 
         // Fond de couleur
@@ -333,7 +343,11 @@ public class MapPanel extends JPanel {
         g2.drawString("RESSOURCES", lx, ly + 13);
 
         String[] labels = {"Herbe", "Batiment", "Foret / Bois", "Mine / Fer", "Gisement / Or", "Cueillette / Nourr."};
-        Color[]  colors = {COL_HERBE, COL_BATIMENT, COL_BOIS, COL_FER, COL_OR, COL_NOURRITURE};
+        Color[]  colors = {COL_HERBE_JOUR, COL_BATIMENT, COL_BOIS, COL_FER, COL_OR, COL_NOURRITURE};
+
+        if (!gameMap.getIsDay()) {
+            colors[0] = COL_HERBE_NUIT; // Adapter la couleur de l'herbe selon le cycle jour/nuit
+        }
 
         g2.setFont(FONT_LEGEND);
         for (int i = 0; i < labels.length; i++) {

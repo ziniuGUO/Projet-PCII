@@ -35,6 +35,8 @@ public class Main {
             mapPanel.addMouseMotionListener(reactionClic);
             mapPanel.addMouseListener(reactionClic);
 
+            Timer timerRafraichissement = new Timer(120, e -> mapPanel.repaint());
+            timerRafraichissement.start();
             // ScrollPane au cas où la map est grande
             JScrollPane scrollPane = new JScrollPane(mapPanel);
             scrollPane.setBorder(BorderFactory.createEmptyBorder());

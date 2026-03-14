@@ -2,6 +2,8 @@ package view;
 
 import java.awt.*;
 import javax.swing.*;
+import java.util.List;
+import model.ActionType;
 import model.Map;
 import model.Personnage;
 /**
@@ -114,11 +116,14 @@ public class MapPanel extends JPanel {
         drawSelection(g2);
         drawTooltip(g2);
         drawLegend(g2);
+        drawNotification(g2);
     }
+
 
     // ── Personnages ───────────────────────────────────────────────────────────
     private void drawPersonnages(Graphics2D g2) {
         for (Personnage p : gameMap.getPersonnages()) {
+            if (!p.isDeploye()) continue;
             int px = BORDER_PAD + p.getX() * TILE_SIZE;
             int py = BORDER_PAD + TITLE_H + p.getY() * TILE_SIZE;
 
@@ -131,8 +136,13 @@ public class MapPanel extends JPanel {
             g2.setColor(new Color(0, 0, 0, 90));
             g2.fillOval(cx + 2, cy + 3, size, size);
 
-            // Corps (cercle)
-            g2.setColor(new Color(60, 120, 200));
+            if (p.isPretARecuperer()) {
+                g2.setColor(new Color(255, 180, 60));
+            } else if (p.isEnExecution()) {
+                g2.setColor(new Color(220, 100, 100));
+            } else {
+                g2.setColor(new Color(60, 120, 200));
+            }
             g2.fillOval(cx, cy, size, size);
 
             // Contour
@@ -141,17 +151,46 @@ public class MapPanel extends JPanel {
             g2.drawOval(cx, cy, size, size);
             g2.setStroke(new BasicStroke(1f));
 
+            String affichage = getNomAffiche(p);
             // Lettre "V"
             g2.setFont(new Font("SansSerif", Font.BOLD, 16));
             g2.setColor(Color.WHITE);
             FontMetrics fm = g2.getFontMetrics();
-            String letter = "V";
-            int tx = px + (TILE_SIZE - fm.stringWidth(letter)) / 2;
+            int tx = px + (TILE_SIZE - fm.stringWidth(affichage)) / 2;
             int ty = py + (TILE_SIZE + fm.getAscent()) / 2 - 4;
-            g2.drawString(letter, tx, ty);
+            g2.drawString(affichage, tx, ty);
         }
     }
+    private String getNomAffiche(Personnage personnage) {
+        String nom = personnage.getNom();
+        if (nom == null || nom.isBlank()) return "?";
 
+        String premiere = nom.substring(0, 1).toUpperCase();
+
+        boolean conflit = false;
+        for (Personnage autre : gameMap.getPersonnages()) {
+            if (autre == personnage) continue;
+
+            String autreNom = autre.getNom();
+            if (autreNom == null || autreNom.isBlank()) continue;
+
+            if (autreNom.substring(0, 1).equalsIgnoreCase(premiere)) {
+                conflit = true;
+                break;
+            }
+        }
+
+        if (!conflit) {
+            return premiere;
+        }
+
+        if (nom.length() >= 2) {
+            return nom.substring(0, 2).substring(0, 1).toUpperCase()
+                    + nom.substring(1, 2).toLowerCase();
+        }
+
+        return premiere;
+    }
     private void drawSelectedPersonnage(Graphics2D g2) {
         if (selectedPersonnage == null) return;
 
@@ -168,13 +207,13 @@ public class MapPanel extends JPanel {
         String title = "Carte du Royaume";
         g2.setFont(FONT_TITLE);
         FontMetrics fm = g2.getFontMetrics();
-        int tx = (getWidth() - 140 - fm.stringWidth(title)) / 2;
+        int tx = (getWidth() - 170 - fm.stringWidth(title)) / 2;
 
         g2.setColor(new Color(0, 0, 0, 130));
         g2.drawString(title, tx + 2, 34);
 
         GradientPaint gold = new GradientPaint(0, 12, new Color(255, 220, 60),
-                                               0, 34, new Color(190, 140,  0));
+                0, 34, new Color(190, 140, 0));
         g2.setPaint(gold);
         g2.drawString(title, tx, 34);
     }
@@ -186,82 +225,92 @@ public class MapPanel extends JPanel {
                 int px = BORDER_PAD + x * TILE_SIZE;
                 int py = BORDER_PAD + TITLE_H + y * TILE_SIZE;
                 int type = gameMap.getTerrainAt(x, y);
-                
-                drawTile(g2, px, py, type);
+
+                drawTile(g2, px, py, type, x, y);
             }
         }
     }
 
-    private void drawTile(Graphics2D g2, int px, int py, int type) {
+    private void drawTile(Graphics2D g2, int px, int py, int type, int tileX, int tileY) {
         Color color;
         String label = null;
         Color textColor = Color.WHITE;
 
         switch (type) {
-            case 1: // Herbe
-                if (gameMap.getIsDay()) {
-                    color = COL_HERBE_JOUR;
-                } else {
-                    color = COL_HERBE_NUIT;
-                }
-                break;
-            case 2: // Batiment
+            case 1 -> color = gameMap.getIsDay() ? COL_HERBE_JOUR : COL_HERBE_NUIT;
+            case 2 -> {
                 color = COL_BATIMENT;
                 label = "CONSTRUIRE";
                 textColor = new Color(60, 60, 60);
-                break;
-            case 3: // Foret / Bois
-                color = COL_BOIS;
-                label = "BOIS";
-                break;
-            case 4: // Mine / Fer
+            }
+            case 3 -> {
+                float tauxBois = (float) gameMap.getStockBoisForet() / gameMap.getStockBoisForetMax();
+                color = new Color(20, 90 + (int) (120 * tauxBois), 20);
+                label = "BOIS " + gameMap.getStockBoisForet();
+            }
+            case 4 -> {
                 color = COL_FER;
                 label = "FER";
-                break;
-            case 5: // Gisement / Or
+            }
+            case 5 -> {
                 color = COL_OR;
                 label = "OR";
                 textColor = new Color(100, 70, 0);
-                break;
-            case 6: // Cueillette / Nourriture
+            }
+            case 6 -> {
                 color = COL_NOURRITURE;
-                label = "NOURRITURE";
-                break;
-            default:
-                if (gameMap.getIsDay()) {
-                    color = COL_HERBE_JOUR;
-                } else {
-                    color = COL_HERBE_NUIT;
-                }
-                break;
+                label = "NOURR.";
+            }
+            default -> color = gameMap.getIsDay() ? COL_HERBE_JOUR : COL_HERBE_NUIT;
         }
 
-        // Fond de couleur
+        ActionType actionAffichee = null;
+        if (selectedPersonnage != null && selectedPersonnage.isDeploye()) {
+            actionAffichee = selectedPersonnage.getActionCourante();
+        } else if (gameMap.getPersonnageMiseEnValeur() != null) {
+            actionAffichee = gameMap.getActionMiseEnValeur();
+        }
+
+        if (gameMap.caseCorrespondAAction(type, actionAffichee)) {
+            if (actionAffichee == ActionType.COUPER_BOIS) {
+                color = new Color(40, 170, 40);
+            } else if (actionAffichee == ActionType.MINER_FER) {
+                color = new Color(120, 120, 210);
+            }
+        }
+
         g2.setColor(color);
         g2.fillRect(px, py, TILE_SIZE, TILE_SIZE);
 
-        // Bordure legere
         g2.setColor(new Color(0, 0, 0, 30));
         g2.drawRect(px, py, TILE_SIZE - 1, TILE_SIZE - 1);
 
-        // Texte du label si necessaire
         if (label != null) {
             g2.setFont(FONT_RESOURCE);
             g2.setColor(textColor);
             FontMetrics fm = g2.getFontMetrics();
-            
-            // Texte centre
+
             int textWidth = fm.stringWidth(label);
             int textX = px + (TILE_SIZE - textWidth) / 2;
             int textY = py + (TILE_SIZE + fm.getAscent()) / 2 - 2;
-            
-            // Ombre pour lisibilite
+
             g2.setColor(new Color(0, 0, 0, 100));
             g2.drawString(label, textX + 1, textY + 1);
             g2.setColor(textColor);
             g2.drawString(label, textX, textY);
         }
+
+        if (type == 2 && gameMap.estAutelInvocation(tileX, tileY)) {
+            g2.setFont(new Font("SansSerif", Font.BOLD, 10));
+            g2.setColor(new Color(120, 20, 120));
+            String autel = "AUTEL";
+            FontMetrics fm2 = g2.getFontMetrics();
+            int ax = px + (TILE_SIZE - fm2.stringWidth(autel)) / 2;
+            int ay = py + TILE_SIZE - 6;
+            g2.drawString(autel, ax, ay);
+        }
     }
+
 
     // ── Grille ─────────────────────────────────────────────────────────────────
     private void drawGrid(Graphics2D g2) {
@@ -293,13 +342,25 @@ public class MapPanel extends JPanel {
     // ── Tooltip ────────────────────────────────────────────────────────────────
     private void drawTooltip(Graphics2D g2) {
         if (selectedX < 0) return;
+
         String text;
         if (hoveredPersonnage != null) {
+            String etat;
+            if (hoveredPersonnage.isPretARecuperer()) {
+                etat = "Mission terminée - clique pour récupérer";
+            } else if (hoveredPersonnage.isEnExecution()) {
+                etat = "En exécution";
+            } else if (hoveredPersonnage.isDeploye()) {
+                etat = "En déplacement";
+            } else {
+                etat = "Réserve";
+            }
+
             text = String.format(
-                    "%s  |  %d★  |  Action: %s  |  (%d, %d)",
+                    "%s | %d★ | %s | (%d, %d)",
                     hoveredPersonnage.getNom(),
                     hoveredPersonnage.getRareteEtoiles(),
-                    hoveredPersonnage.getActionCourante().getLabel(),
+                    etat,
                     hoveredPersonnage.getX(),
                     hoveredPersonnage.getY()
             );
@@ -314,7 +375,12 @@ public class MapPanel extends JPanel {
                 case 6 -> "Cueillette -> Nourriture";
                 default -> "Inconnu";
             };
-            text = String.format("(%d, %d)  -  %s", selectedX, selectedY, typeName);
+
+            if (gameMap.estAutelInvocation(selectedX, selectedY)) {
+                text = String.format("(%d, %d) - Autel d'invocation", selectedX, selectedY);
+            } else {
+                text = String.format("(%d, %d) - %s", selectedX, selectedY, typeName);
+            }
         }
 
         g2.setFont(FONT_TOOLTIP);
@@ -328,6 +394,34 @@ public class MapPanel extends JPanel {
         g2.fillRoundRect(bx - 4, by - 2, tw, th, 8, 8);
         g2.setColor(new Color(255, 215, 0));
         g2.drawString(text, bx + 4, by + fm.getAscent() - 1);
+    }
+
+    // ── Notification ───────────────────────────────────────────────────────────
+    private void drawNotification(Graphics2D g2) {
+        String message = gameMap.getNotificationMessage();
+        if (message == null || message.isBlank()) return;
+
+        int boxW = 300;
+        int boxH = 60;
+        int bx = BORDER_PAD + gameMap.getWidth() * TILE_SIZE - boxW;
+        int by = 8;
+
+        g2.setColor(new Color(20, 20, 20, 210));
+        g2.fillRoundRect(bx, by, boxW, boxH, 12, 12);
+
+        g2.setColor(new Color(255, 215, 0));
+        g2.setFont(new Font("SansSerif", Font.BOLD, 12));
+        g2.drawString("Notification", bx + 12, by + 18);
+
+        g2.setColor(Color.WHITE);
+        g2.setFont(new Font("SansSerif", Font.PLAIN, 11));
+
+        String ligne1 = message;
+        if (ligne1.length() > 42) {
+            ligne1 = ligne1.substring(0, 42) + "...";
+        }
+        g2.drawString(ligne1, bx + 12, by + 38);
+        g2.drawString("Clique sur le personnage pour récupérer.", bx + 12, by + 53);
     }
 
     // ── Legende ────────────────────────────────────────────────────────────────
@@ -359,5 +453,7 @@ public class MapPanel extends JPanel {
             g2.setColor(new Color(220, 205, 170));
             g2.drawString(labels[i], lx + 18, iy + 11);
         }
+        g2.setColor(new Color(220, 205, 170));
+        g2.drawString("Fer stock: " + gameMap.getStockFer(), lx, ly + 28 + labels.length * 22 + 10);
     }
 }

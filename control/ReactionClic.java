@@ -6,7 +6,7 @@ import model.Map;
 import model.Personnage;
 import model.ActionType;
 import view.MapPanel;
-
+import view.FenetreInvocation;
 /**
  * Gestion des interactions souris sur la map.
  * Gere la selection de tuiles au survol et au clic.
@@ -61,43 +61,36 @@ public class ReactionClic implements MouseMotionListener, MouseListener {
 
         if (!gameMap.isValidPosition(tileX, tileY)) return;
 
-        Personnage selected = mapPanel.getSelectedPersonnage();
+        if (gameMap.estAutelInvocation(tileX, tileY) && SwingUtilities.isLeftMouseButton(e)) {
+            FenetreInvocation fenetreInvocation = new FenetreInvocation(gameMap, mapPanel);
+            fenetreInvocation.setVisible(true);
+            return;
+        }
 
-        // Pointage sur un personnage : selection + action
         Personnage clicked = gameMap.getPersonnageAt(tileX, tileY);
         if (clicked != null) {
-            // Si on clique sur le meme personnage deja selectionne => deselection
-            if (selected == clicked) {
+            mapPanel.setSelectedPersonnage(clicked);
+
+            if (clicked.isPretARecuperer()) {
+                int gain = gameMap.recupererRecompenseEtRappeler(clicked);
+                String msg;
+                if (clicked.getActionCourante() == ActionType.DEFENDRE || gain == 0) {
+                    msg = "Mission terminée. Le personnage est retourné à l'autel.";
+                } else {
+                    msg = "Récompense récupérée : +" + gain + ". Le personnage retourne à l'autel.";
+                }
+                JOptionPane.showMessageDialog(mapPanel, msg);
                 mapPanel.setSelectedPersonnage(null);
                 mapPanel.repaint();
                 return;
             }
 
-            // Sinon, selection du personnage clique
-            mapPanel.setSelectedPersonnage(clicked);
-
-            // Si clic gauche => ouvrir dialogue d'actions
             if (SwingUtilities.isLeftMouseButton(e)) {
                 ouvrirDialogueActions(clicked);
             }
             mapPanel.repaint();
             return;
         }
-
-        //Clic sur une tuile vide : deplacer le personnage selectionne (debug)
-        if (selected != null) {
-            selected.setPosition(tileX, tileY);
-
-            // Apres deplacement, on deselectionne le personnage
-            mapPanel.setSelectedPersonnage(null);
-
-            mapPanel.repaint();
-            return;
-        }
-
-        // Clic sur une tuile vide sans personnage selectionne : afficher le type de terrain (debug)
-        int terrainType = gameMap.getTerrainAt(tileX, tileY);
-        System.out.println("Clic sur (" + tileX + ", " + tileY + ") - Type: " + Map.getNomTerrain(terrainType));
     }
 
     private void ouvrirDialogueActions(Personnage p) {
@@ -107,7 +100,8 @@ public class ReactionClic implements MouseMotionListener, MouseListener {
         Object[] options = {
                 ActionType.COUPER_BOIS.getLabel(),
                 ActionType.MINER_FER.getLabel(),
-                ActionType.DEFENDRE.getLabel()
+                ActionType.DEFENDRE.getLabel(),
+                "Rappeler"
         };
 
         int choix = JOptionPane.showOptionDialog(
@@ -121,9 +115,45 @@ public class ReactionClic implements MouseMotionListener, MouseListener {
                 options[0]
         );
 
+        if (choix == 3) {
+            gameMap.rappelerPersonnage(p);
+            mapPanel.setSelectedPersonnage(null);
+            mapPanel.repaint();
+            return;
+        }
+
+        ActionType nouvelleAction = null;
         if (choix == 0) p.setActionCourante(ActionType.COUPER_BOIS);
         else if (choix == 1) p.setActionCourante(ActionType.MINER_FER);
         else if (choix == 2) p.setActionCourante(ActionType.DEFENDRE);
+
+        if (nouvelleAction == null) return;
+
+        if (p.getActionCourante() == nouvelleAction && (p.isEnExecution() || !p.estArrive() || p.isPretARecuperer())) {
+            JOptionPane.showMessageDialog(mapPanel, "Ce personnage effectue déjà cette action.");
+            return;
+        }
+
+        if (p.getActionCourante() != null && p.getActionCourante() != nouvelleAction
+                && (p.isEnExecution() || !p.estArrive() || p.isPretARecuperer())) {
+
+            int confirmation = JOptionPane.showConfirmDialog(
+                    mapPanel,
+                    "Ce personnage est déjà occupé.\nInterrompre l'action en cours ?\nSi tu interromps, aucune ressource ne sera obtenue.",
+                    "Confirmation",
+                    JOptionPane.YES_NO_OPTION
+            );
+
+            if (confirmation != JOptionPane.YES_OPTION) {
+                return;
+            }
+
+            p.interrompreAction();
+            p.setPretARecuperer(false);
+        }
+
+        gameMap.deployerPersonnage(p, nouvelleAction);
+        mapPanel.repaint();
     }
 
     @Override

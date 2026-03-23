@@ -97,6 +97,8 @@ public void setOnRessourceGagneeListener(OnRessourceGagneeListener l) {
     public Personnage invoquerPersonnage(int coutInvocation) {
         if (!peutInvoquer(coutInvocation)) return null;
         stockOr -= coutInvocation;
+        if (ressourceListener != null && coutInvocation > 0)
+                ressourceListener.onRessourceGagnee(model.Ressource.Type.OR, -coutInvocation);
         String[] noms = {"Arthur", "Lina", "Kael", "Mira", "Thorne", "Sylva", "Ronan", "Elya", "Darius", "Nyx"};
         String nom = noms[random.nextInt(noms.length)];
         int etoiles = tirerRarete();

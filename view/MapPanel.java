@@ -170,7 +170,8 @@ public class MapPanel extends JPanel {
                 if (typeBat != null && gameMap.estConstruit(tileX, tileY)) {
                     switch (typeBat) {
                         case Map.TYPE_HOTEL_VILLE:
-                            color = COL_HOTEL_VILLE; label = "HOTEL"; break;
+                            color = COL_HOTEL_VILLE;
+                            label = "HOTEL Niv." + gameMap.getHotelDeVille().getNiveau(); break;
                         case Map.TYPE_MAISON:
                             color = COL_MAISON; label = "MAISON";
                             textColor = new Color(60, 40, 20); break;
@@ -188,8 +189,22 @@ public class MapPanel extends JPanel {
                             color = COL_BATIMENT; label = "BATIMENT";
                     }
                 } else {
-                    color = COL_BATIMENT; label = "CONSTRUIRE";
-                    textColor = new Color(60, 60, 60);
+                    // non construit : version grisée du type pour qu'on reconnaisse le bâtiment
+                    textColor = new Color(190, 190, 190);
+                    if (typeBat != null) {
+                        switch (typeBat) {
+                            case Map.TYPE_HOTEL_VILLE:    color = new Color(110, 65, 65);  label = "HOTEL";     break;
+                            case Map.TYPE_MAISON:         color = new Color(115, 100, 85); label = "MAISON";    break;
+                            case Map.TYPE_ENTREPOT_BOIS:  color = new Color(55, 85, 65);   label = "ENT.BOIS";  break;
+                            case Map.TYPE_ENTREPOT_FER:   color = new Color(65, 75, 95);   label = "ENT.FER";   break;
+                            case Map.TYPE_ENTREPOT_OR:    color = new Color(105, 95, 45);  label = "ENT.OR";    break;
+                            case Map.TYPE_ENTREPOT_NOURR: color = new Color(85, 70, 50);   label = "ENT.NOURR"; break;
+                            case Map.TYPE_AUTEL_INVOC:    color = new Color(80, 50, 100);  label = "AUTEL";     break;
+                            default: color = COL_BATIMENT; label = "CONSTRUIRE";
+                        }
+                    } else {
+                        color = COL_BATIMENT; label = "CONSTRUIRE";
+                    }
                 }
             }
             case 3 -> {
@@ -218,12 +233,22 @@ public class MapPanel extends JPanel {
         g2.setColor(color);
         g2.fillRect(px, py, TILE_SIZE, TILE_SIZE);
 
-        // bordure plus visible pour les batiments construits
-        if (type == 2 && gameMap.getTypeBatiment(tileX, tileY) != null && gameMap.estConstruit(tileX, tileY)) {
-            g2.setColor(new Color(0, 0, 0, 80));
-            g2.setStroke(new BasicStroke(2f));
-            g2.drawRect(px + 1, py + 1, TILE_SIZE - 2, TILE_SIZE - 2);
-            g2.setStroke(new BasicStroke(1f));
+        // bordure selon l'état du bâtiment
+        if (type == 2 && gameMap.getTypeBatiment(tileX, tileY) != null) {
+            if (gameMap.estConstruit(tileX, tileY)) {
+                // construit : bordure pleine épaisse
+                g2.setColor(new Color(0, 0, 0, 80));
+                g2.setStroke(new BasicStroke(2f));
+                g2.drawRect(px + 1, py + 1, TILE_SIZE - 2, TILE_SIZE - 2);
+                g2.setStroke(new BasicStroke(1f));
+            } else {
+                // non construit : bordure pointillée pour indiquer "à construire"
+                float[] dash = {4f, 4f};
+                g2.setColor(new Color(200, 200, 200, 120));
+                g2.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10f, dash, 0f));
+                g2.drawRect(px + 1, py + 1, TILE_SIZE - 2, TILE_SIZE - 2);
+                g2.setStroke(new BasicStroke(1f));
+            }
         } else {
             g2.setColor(new Color(0, 0, 0, 30));
             g2.drawRect(px, py, TILE_SIZE - 1, TILE_SIZE - 1);
@@ -356,20 +381,40 @@ public class MapPanel extends JPanel {
         g2.setColor(new Color(255, 215, 60, 70));
         g2.drawLine(lx, invY + 18, lx + 122, invY + 18);
 
+        // max par ressource depuis l'inventaire (via gameMap)
+        int[] resMax = {
+            gameMap.getInventaire().getMaxBois(),
+            gameMap.getInventaire().getMaxFer(),
+            gameMap.getInventaire().getMaxOr(),
+            gameMap.getInventaire().getMaxNourriture()
+        };
+
         for (int i = 0; i < resLabels.length; i++) {
             int iy = invY + 30 + i * 26;
             g2.setColor(resColors[i]);
             g2.fillRect(lx, iy, 14, 14);
             g2.setColor(new Color(0, 0, 0, 100));
             g2.drawRect(lx, iy, 14, 14);
+
             g2.setFont(FONT_LEGEND);
             g2.setColor(new Color(220, 205, 170));
-            g2.drawString(resLabels[i], lx + 18, iy + 11);
-            g2.setFont(FONT_INV_VAL);
-            String val = String.valueOf(resValues[i]);
+            g2.drawString(resLabels[i], lx + 18, iy + 8);
+
+            // afficher val / max sous le nom
+            String maxStr = (resMax[i] < 0) ? "∞" : String.valueOf(resMax[i]);
+            String valStr = resValues[i] + "/" + maxStr;
+            g2.setFont(new Font("SansSerif", Font.BOLD, 10));
             FontMetrics fm = g2.getFontMetrics();
+            // barre de remplissage
+            int barW = 110;
+            float ratio = (resMax[i] <= 0) ? 0f : Math.min(1f, (float) resValues[i] / resMax[i]);
+            g2.setColor(new Color(0, 0, 0, 80));
+            g2.fillRect(lx + 18, iy + 13, barW, 6);
+            g2.setColor(resColors[i].darker());
+            g2.fillRect(lx + 18, iy + 13, (int)(barW * ratio), 6);
+            // texte valeur
             g2.setColor(resValues[i] > 0 ? new Color(255, 240, 160) : new Color(130, 120, 100));
-            g2.drawString(val, lx + 126 - fm.stringWidth(val), iy + 11);
+            g2.drawString(valStr, lx + 18 + barW - fm.stringWidth(valStr), iy + 11);
         }
     }
 }

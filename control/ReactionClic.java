@@ -2,11 +2,11 @@ package control;
 
 import java.awt.event.*;
 import javax.swing.*;
+import model.ActionType;
 import model.Map;
 import model.Personnage;
-import model.ActionType;
-import view.MapPanel;
 import view.FenetreInvocation;
+import view.MapPanel;
 /**
  * Gestion des interactions souris sur la map.
  * Gere la selection de tuiles au survol et au clic.
@@ -67,6 +67,20 @@ public class ReactionClic implements MouseMotionListener, MouseListener {
             return;
         }
 
+        // Clic sur l'Hotel de Ville → dialogue d'amelioration
+        if (gameMap.estHotelDeVille(tileX, tileY) && SwingUtilities.isLeftMouseButton(e)) {
+            ouvrirDialogueHotelDeVille();
+            return;
+        }
+
+        // Clic sur un bâtiment non construit → dialogue de construction
+        if (gameMap.getTerrainAt(tileX, tileY) == model.Map.BATIMENT
+                && !gameMap.estConstruit(tileX, tileY)
+                && SwingUtilities.isLeftMouseButton(e)) {
+            ouvrirDialogueConstruction(tileX, tileY);
+            return;
+        }
+
         Personnage clicked = gameMap.getPersonnageAt(tileX, tileY);
         if (clicked != null) {
             mapPanel.setSelectedPersonnage(clicked);
@@ -90,6 +104,120 @@ public class ReactionClic implements MouseMotionListener, MouseListener {
             }
             mapPanel.repaint();
             return;
+        }
+    }
+
+    private void ouvrirDialogueConstruction(int tileX, int tileY) {
+        String type = gameMap.getTypeBatiment(tileX, tileY);
+        if (type == null) return;
+
+        int[] cout = gameMap.getCoutConstruction(tileX, tileY);
+        if (cout == null) return;
+
+        model.Inventaire inv = gameMap.getInventaire();
+
+        // Nom lisible du bâtiment
+        String nom = switch (type) {
+            case model.Map.TYPE_MAISON         -> "Maison";
+            case model.Map.TYPE_ENTREPOT_BOIS  -> "Entrepôt de Bois";
+            case model.Map.TYPE_ENTREPOT_FER   -> "Entrepôt de Fer";
+            case model.Map.TYPE_ENTREPOT_OR    -> "Trésorerie (Or)";
+            case model.Map.TYPE_ENTREPOT_NOURR -> "Grenier (Nourriture)";
+            default -> type;
+        };
+
+        // Vérifier si le joueur a assez
+        boolean assezBois = inv == null || inv.getBois() >= cout[0];
+        boolean assezFer  = inv == null || inv.getFer()  >= cout[1];
+        boolean assezOr   = inv == null || inv.getOr()   >= cout[2];
+        boolean peutConstruire = assezBois && assezFer && assezOr;
+
+        // Panneau principal
+        javax.swing.JPanel panel = new javax.swing.JPanel();
+        panel.setLayout(new java.awt.GridLayout(0, 1, 4, 4));
+
+        panel.add(new javax.swing.JLabel("<html><b>Construire : " + nom + "</b></html>"));
+        panel.add(new javax.swing.JLabel(" "));
+
+        // Ligne ressource : couleur rouge si manque
+        String colorBois = assezBois ? "green" : "red";
+        String colorFer  = assezFer  ? "green" : "red";
+        String colorOr   = assezOr   ? "green" : "red";
+
+        int stockBois = inv != null ? inv.getBois() : 0;
+        int stockFer  = inv != null ? inv.getFer()  : 0;
+        int stockOr   = inv != null ? inv.getOr()   : 0;
+
+        // N'afficher que les ressources dont le coût est > 0
+        if (cout[0] > 0)
+            panel.add(new javax.swing.JLabel("<html>🪵 Bois : <font color='" + colorBois + "'><b>" + cout[0] + "</b></font> &nbsp; (vous avez : " + stockBois + ")</html>"));
+        if (cout[1] > 0)
+            panel.add(new javax.swing.JLabel("<html>⚙ Fer  : <font color='" + colorFer  + "'><b>" + cout[1] + "</b></font> &nbsp; (vous avez : " + stockFer  + ")</html>"));
+        if (cout[2] > 0)
+            panel.add(new javax.swing.JLabel("<html>🪙 Or   : <font color='" + colorOr   + "'><b>" + cout[2] + "</b></font> &nbsp; (vous avez : " + stockOr   + ")</html>"));
+
+        if (!peutConstruire)
+            panel.add(new javax.swing.JLabel("<html><font color='red'><i>Ressources insuffisantes.</i></font></html>"));
+
+        // Bouton construire activé seulement si assez de ressources
+        javax.swing.JButton btnConstruire = new javax.swing.JButton("Construire");
+        btnConstruire.setEnabled(peutConstruire);
+
+        Object[] options = { btnConstruire, "Annuler" };
+
+        javax.swing.JOptionPane pane = new javax.swing.JOptionPane(
+            panel,
+            javax.swing.JOptionPane.PLAIN_MESSAGE,
+            javax.swing.JOptionPane.OK_CANCEL_OPTION,
+            null,
+            options,
+            peutConstruire ? btnConstruire : options[1]
+        );
+
+        javax.swing.JDialog dialog = pane.createDialog(mapPanel, "Construction");
+
+        btnConstruire.addActionListener(ev -> {
+            String erreur = gameMap.tenterConstruction(tileX, tileY);
+            dialog.dispose();
+            if (erreur != null) {
+                javax.swing.JOptionPane.showMessageDialog(mapPanel, erreur, "Erreur", javax.swing.JOptionPane.ERROR_MESSAGE);
+            } else {
+                javax.swing.JOptionPane.showMessageDialog(mapPanel, nom + " construit !", "Construction", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+            }
+            mapPanel.repaint();
+        });
+
+        dialog.setVisible(true);
+    }
+
+    private void ouvrirDialogueHotelDeVille() {
+        model.HotelDeVille hdv = gameMap.getHotelDeVille();
+        int niveau = hdv.getNiveau();
+        int cap = hdv.getCapaciteBase();
+        String capStr = (cap < 0) ? "Illimitée" : (cap + " par ressource");
+
+        if (hdv.estAuNiveauMax()) {
+            JOptionPane.showMessageDialog(mapPanel,
+                "Hôtel de Ville — Niveau MAX (" + niveau + "/" + model.HotelDeVille.NIVEAU_MAX + ")\n"
+                + "Capacité de stockage : " + capStr,
+                "Hôtel de Ville",
+                JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        int coutFer = hdv.getCoutAmelioration();
+        int choix = JOptionPane.showConfirmDialog(mapPanel,
+            "Hôtel de Ville — Niveau " + niveau + "/" + model.HotelDeVille.NIVEAU_MAX + "\n"
+            + "Capacité actuelle : " + capStr + "\n\n"
+            + "Améliorer au niveau " + (niveau + 1) + " ?\n"
+            + "Coût : " + coutFer + " fer",
+            "Améliorer l'Hôtel de Ville",
+            JOptionPane.YES_NO_OPTION);
+
+        if (choix == JOptionPane.YES_OPTION) {
+            String resultat = gameMap.ameliorerHotelDeVille();
+            JOptionPane.showMessageDialog(mapPanel, resultat, "Hôtel de Ville", JOptionPane.INFORMATION_MESSAGE);
+            mapPanel.repaint();
         }
     }
 

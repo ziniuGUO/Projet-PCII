@@ -22,6 +22,14 @@ public class Map {
     public static final String TYPE_ENTREPOT_NOURR = "ENTREPOT_NOURR";
     public static final String TYPE_AUTEL_INVOC    = "AUTEL_INVOC";
 
+    // Coûts de construction par type de bâtiment {bois, fer, or}
+    // Seul le bois est nécessaire pour construire
+    public static final int[] COUT_MAISON         = {2000, 0, 0};
+    public static final int[] COUT_ENTREPOT_BOIS  = {2000, 0, 0};
+    public static final int[] COUT_ENTREPOT_FER   = {2000, 0, 0};
+    public static final int[] COUT_ENTREPOT_OR    = {2000, 0, 0};
+    public static final int[] COUT_ENTREPOT_NOURR = {2000, 0, 0};
+
     // type de batiment par position "x,y"
     private final HashMap<String, String>  typesBatiments      = new HashMap<>();
     // indique si le batiment est construit ou non
@@ -36,8 +44,12 @@ public class Map {
     private final List<Personnage> personnages = new ArrayList<>();
     private final Random random = new Random();
     private final AutelInvocation autelInvocation;
-    private final int autelX = 13;
-    private final int autelY = 4;
+    private final int autelX = 10;
+    private final int autelY = 13;
+    private final HotelDeVille hotelDeVille;
+    private static final int HDV_X = 10;
+    private static final int HDV_Y = 7;
+    private Inventaire inventaire;
     private int stockOr = 500;
     private int stockBoisForet = 200;
     private final int stockBoisForetMax = 200;
@@ -61,6 +73,7 @@ public void setOnRessourceGagneeListener(OnRessourceGagneeListener l) {
         this.terrain = new int[height][width];
         this.jourNuit = new JourNuit();
         this.autelInvocation = new AutelInvocation("Autel d'invocation", 300, autelX, autelY, 0, 0, 0);
+        this.hotelDeVille = new HotelDeVille("Hotel de Ville", 1000, HDV_X, HDV_Y, 0, 0, 0);
         jourNuit.start();
         initializeDefaultMap();
         initBatiments();
@@ -89,6 +102,87 @@ public void setOnRessourceGagneeListener(OnRessourceGagneeListener l) {
     public Personnage getPersonnageMiseEnValeur(){ return personnageMiseEnValeur; }
     public String getNotificationMessage()       { return notificationMessage; }
     public void clearNotificationMessage()       { notificationMessage = ""; }
+    public HotelDeVille getHotelDeVille()         { return hotelDeVille; }
+    public Inventaire getInventaire()              { return inventaire; }
+    public boolean estHotelDeVille(int x, int y)  { return x == HDV_X && y == HDV_Y; }
+
+    /** Lie l'inventaire à la Map et applique les capacités initiales. */
+    public void setInventaire(Inventaire inv) {
+        this.inventaire = inv;
+        recalculerCapacites();
+    }
+
+    /**
+     * Recalcule et applique les capacités max de l'inventaire selon :
+     * - le niveau de l'HdV
+     * - quels entrepôts sont construits
+     */
+    public void recalculerCapacites() {
+        if (inventaire == null) return;
+        boolean entrepotBois  = estConstruit(2,  6);
+        boolean entrepotFer   = estConstruit(4,  13);
+        boolean entrepotOr    = estConstruit(16, 13);
+        boolean entrepotNourr = estConstruit(17, 5);
+        inventaire.setCapacites(
+            hotelDeVille.getCapaciteTotale(entrepotBois),
+            hotelDeVille.getCapaciteTotale(entrepotFer),
+            hotelDeVille.getCapaciteTotale(entrepotOr),
+            hotelDeVille.getCapaciteTotale(entrepotNourr)
+        );
+    }
+
+    /**
+     * Tente d'améliorer l'Hôtel de Ville d'un niveau.
+     * Retourne un message résultat.
+     */
+    public String ameliorerHotelDeVille() {
+        if (hotelDeVille.estAuNiveauMax())
+            return "L'Hôtel de Ville est déjà au niveau maximum !";
+        int cout = hotelDeVille.getCoutAmelioration();
+        if (inventaire == null || inventaire.getFer() < cout)
+            return "Pas assez de fer ! Il faut " + cout + " fer.";
+        inventaire.retirerRessource(Ressource.Type.FER, cout);
+        hotelDeVille.monterNiveau();
+        recalculerCapacites();
+        int cap = hotelDeVille.getCapaciteBase();
+        return "Hôtel de Ville amélioré ! Niveau " + hotelDeVille.getNiveau()
+             + " — Capacité de base : " + cap;
+    }
+
+    /** Construit un bâtiment et recalcule les capacités si c'est un entrepôt. */
+    public void construireBatimentEtRecalculer(int x, int y) {
+        construireBatiment(x, y);
+        recalculerCapacites();
+    }
+
+    /** Retourne les coûts {bois, fer, or} pour construire un bâtiment selon son type. */
+    public int[] getCoutConstruction(int x, int y) {
+        String type = getTypeBatiment(x, y);
+        if (type == null) return null;
+        return switch (type) {
+            case TYPE_MAISON         -> COUT_MAISON;
+            case TYPE_ENTREPOT_BOIS  -> COUT_ENTREPOT_BOIS;
+            case TYPE_ENTREPOT_FER   -> COUT_ENTREPOT_FER;
+            case TYPE_ENTREPOT_OR    -> COUT_ENTREPOT_OR;
+            case TYPE_ENTREPOT_NOURR -> COUT_ENTREPOT_NOURR;
+            default -> null;
+        };
+    }
+
+    /** Tente de construire un bâtiment en déduisant les ressources. Retourne null si succès, message d'erreur sinon. */
+    public String tenterConstruction(int x, int y) {
+        if (inventaire == null) return "Inventaire non initialisé.";
+        int[] cout = getCoutConstruction(x, y);
+        if (cout == null) return "Ce bâtiment ne peut pas être construit.";
+        if (inventaire.getBois() < cout[0]) return "Pas assez de bois ! Il faut " + cout[0] + ".";
+        if (inventaire.getFer()  < cout[1]) return "Pas assez de fer ! Il faut "  + cout[1] + ".";
+        if (inventaire.getOr()   < cout[2]) return "Pas assez d'or ! Il faut "    + cout[2] + ".";
+        if (cout[0] > 0) inventaire.retirerRessource(Ressource.Type.BOIS, cout[0]);
+        if (cout[1] > 0) inventaire.retirerRessource(Ressource.Type.FER,  cout[1]);
+        if (cout[2] > 0) inventaire.retirerRessource(Ressource.Type.OR,   cout[2]);
+        construireBatimentEtRecalculer(x, y);
+        return null; // succès
+    }
 
     public boolean peutInvoquer(int coutInvocation) {
         return stockOr >= coutInvocation;
@@ -235,7 +329,8 @@ public void setOnRessourceGagneeListener(OnRessourceGagneeListener l) {
         setTerrainAt(13, 4, BATIMENT);
         setTerrainAt( 7, 10, BATIMENT);
         setTerrainAt(13, 10, BATIMENT);
-        setTerrainAt( 2, 6, BATIMENT);
+        setTerrainAt(10, 13, BATIMENT);  // Autel d'invocation
+        setTerrainAt( 2,  6, BATIMENT);
         setTerrainAt( 4, 13, BATIMENT);
         setTerrainAt(16, 13, BATIMENT);
         setTerrainAt(17, 5, BATIMENT);

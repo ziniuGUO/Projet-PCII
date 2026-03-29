@@ -1,6 +1,7 @@
 package view;
 
 import model.ActionType;
+import model.Batiment;
 import model.Map;
 import model.Personnage;
 
@@ -8,16 +9,16 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.List;
 
 public class FenetreInvocation extends JFrame {
-
-    private static final int COUT_INVOCATION = 100;
 
     private final Map gameMap;
     private final MapPanel mapPanel;
 
     private final DefaultListModel<Personnage> listModel = new DefaultListModel<>();
     private final JLabel labelOr = new JLabel();
+    private final JLabel labelCout = new JLabel();
     private final JLabel labelResultat = new JLabel(" ");
     private final JList<Personnage> listePersonnages = new JList<>(listModel);
 
@@ -35,18 +36,23 @@ public class FenetreInvocation extends JFrame {
         JPanel panelPersonnages = new JPanel(new BorderLayout(8, 8));
 
         labelOr.setHorizontalAlignment(SwingConstants.CENTER);
-        rafraichirOr();
+        labelCout.setHorizontalAlignment(SwingConstants.CENTER);
 
-        JButton boutonInvocation = new JButton("Invoquer (100 or)");
-        boutonInvocation.addActionListener(e -> invoquer());
+        rafraichirInfos();
+
+        JButton boutonInvocation = new JButton();
+        rafraichirTexteBouton(boutonInvocation);
+        boutonInvocation.addActionListener(e -> invoquer(boutonInvocation));
 
         labelResultat.setHorizontalAlignment(SwingConstants.CENTER);
 
         JTextArea aideInvocation = new JTextArea(
-                "1. Clique sur Invoquer pour obtenir un personnage aléatoire.\n" +
-                        "2. Chaque invocation coûte 100 or.\n" +
-                        "3. Un personnage OCCUPÉ ne peut pas être renvoyé depuis l'autel.\n" +
-                        "4. Quand une mission est finie, clique sur le personnage sur la carte."
+                "1. Le coût d'invocation augmente à chaque tirage : 10, 20, 40, 80, etc.\n" +
+                        "2. Taux d'obtention : 1★ 40 %, 2★ 30 %, 3★ 15 %, 4★ 10 %, 5★ 5 %.\n" +
+                        "3. Un 5★ est garanti tous les 10 tirages maximum.\n" +
+                        "   Si vous obtenez un 5★ avant, le compteur est remis à zéro.\n" +
+                        "4. Les personnages 1★ à 5★ ont une vitesse de 1 à 5\n" +
+                        "   et des PV de 10 à 50 respectivement."
         );
         aideInvocation.setEditable(false);
         aideInvocation.setOpaque(false);
@@ -54,7 +60,10 @@ public class FenetreInvocation extends JFrame {
         aideInvocation.setWrapStyleWord(true);
 
         panelInvocation.setBorder(BorderFactory.createTitledBorder("Invocation"));
-        panelInvocation.add(labelOr, BorderLayout.NORTH);
+        JPanel haut = new JPanel(new GridLayout(2, 1));
+        haut.add(labelOr);
+        haut.add(labelCout);
+        panelInvocation.add(haut, BorderLayout.NORTH);
         panelInvocation.add(aideInvocation, BorderLayout.CENTER);
 
         JPanel basInvocation = new JPanel(new GridLayout(2, 1, 4, 4));
@@ -70,8 +79,18 @@ public class FenetreInvocation extends JFrame {
                 JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
 
                 if (value instanceof Personnage personnage) {
-                    String statut = personnage.estDisponible() ? "DISPO" : "OCCUPE";
-                    label.setText(personnage.getNom() + " - " + personnage.getRareteEtoiles() + "★ [" + statut + "]");
+                    String statut;
+                    if (personnage.isEnSoin()) statut = "EN SOIN";
+                    else if (personnage.estOccupe()) statut = "OCCUPE";
+                    else statut = "DISPO";
+
+                    label.setText(
+                            personnage.getNom()
+                                    + " - " + personnage.getRareteEtoiles() + "★"
+                                    + " [VIT=" + personnage.getVitesse()
+                                    + ", HP=" + personnage.getHpActuel() + "/" + personnage.getHpMax()
+                                    + "] [" + statut + "]"
+                    );
 
                     if (!personnage.estDisponible() && !isSelected) {
                         label.setForeground(Color.GRAY);
@@ -81,21 +100,19 @@ public class FenetreInvocation extends JFrame {
             }
         });
 
-        listePersonnages.setToolTipText("");
-        ToolTipManager.sharedInstance().registerComponent(listePersonnages);
-
         listePersonnages.addMouseMotionListener(new MouseAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
                 int index = listePersonnages.locationToIndex(e.getPoint());
                 if (index >= 0) {
                     Personnage personnage = listModel.get(index);
-                    String statut = personnage.estDisponible() ? "DISPO" : "OCCUPE";
+                    String action = personnage.getActionCourante() == null ? "Aucune" : personnage.getActionCourante().getLabel();
                     listePersonnages.setToolTipText(
                             personnage.getNom()
                                     + " | " + personnage.getRareteEtoiles() + "★"
-                                    + " | Etat : " + statut
-                                    + " | Action : " + (personnage.getActionCourante() == null ? "Aucune" : personnage.getActionCourante().getLabel())
+                                    + " | Vitesse : " + personnage.getVitesse()
+                                    + " | HP : " + personnage.getHpActuel() + "/" + personnage.getHpMax()
+                                    + " | Action : " + action
                     );
                 }
             }
@@ -115,7 +132,7 @@ public class FenetreInvocation extends JFrame {
 
         panelPersonnages.setBorder(BorderFactory.createTitledBorder("Personnages obtenus"));
         panelPersonnages.add(new JScrollPane(listePersonnages), BorderLayout.CENTER);
-        panelPersonnages.add(new JLabel("Clique sur un personnage DISPO pour choisir une action.", SwingConstants.CENTER), BorderLayout.SOUTH);
+        panelPersonnages.add(new JLabel("Clique sur un personnage pour lui donner une action.", SwingConstants.CENTER), BorderLayout.SOUTH);
 
         add(panelInvocation);
         add(panelPersonnages);
@@ -123,26 +140,26 @@ public class FenetreInvocation extends JFrame {
         rafraichirListe();
     }
 
-    private void invoquer() {
-        Personnage personnage = gameMap.invoquerPersonnage(COUT_INVOCATION);
+    private void invoquer(JButton boutonInvocation) {
+        Personnage personnage = gameMap.invoquerPersonnage();
         if (personnage == null) {
             JOptionPane.showMessageDialog(this, "Pas assez d'or pour invoquer.");
             return;
         }
 
         labelResultat.setText("Obtenu : " + personnage.getNom() + " - " + personnage.getRareteEtoiles() + "★");
-        rafraichirOr();
+        rafraichirInfos();
+        rafraichirTexteBouton(boutonInvocation);
         rafraichirListe();
         mapPanel.repaint();
     }
 
     private void ouvrirDialogueActions(Personnage p) {
-        if (!p.estDisponible()) {
-            JOptionPane.showMessageDialog(this, "Ce personnage est déjà occupé.");
+        if (p.isEnSoin()) {
+            JOptionPane.showMessageDialog(this, "Ce personnage est en soin.");
             return;
         }
 
-        String titre = "Actions - " + p.getNom() + " (" + p.getRareteEtoiles() + "★)";
         Object[] options = {
                 ActionType.COUPER_BOIS.getLabel(),
                 ActionType.MINER_FER.getLabel(),
@@ -152,7 +169,7 @@ public class FenetreInvocation extends JFrame {
         int choix = JOptionPane.showOptionDialog(
                 this,
                 "Choisis une action :",
-                titre,
+                "Actions - " + p.getNom() + " (" + p.getRareteEtoiles() + "★)",
                 JOptionPane.DEFAULT_OPTION,
                 JOptionPane.INFORMATION_MESSAGE,
                 null,
@@ -167,13 +184,68 @@ public class FenetreInvocation extends JFrame {
 
         if (nouvelleAction == null) return;
 
-        gameMap.deployerPersonnage(p, nouvelleAction);
+        if (nouvelleAction == ActionType.DEFENDRE) {
+            ouvrirDialogueDefense(p);
+        } else {
+            gameMap.deployerPersonnage(p, nouvelleAction);
+        }
+
         rafraichirListe();
         mapPanel.repaint();
     }
 
-    private void rafraichirOr() {
+    private void ouvrirDialogueDefense(Personnage p) {
+        List<Batiment> entrepots = gameMap.getBatimentsDefenseDisponibles();
+        if (entrepots.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Aucun entrepôt construit.");
+            return;
+        }
+
+        DefaultListModel<Batiment> model = new DefaultListModel<>();
+        for (Batiment b : entrepots) model.addElement(b);
+
+        JList<Batiment> list = new JList<>(model);
+        list.setCellRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> l, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                JLabel label = (JLabel) super.getListCellRendererComponent(l, value, index, isSelected, cellHasFocus);
+                Batiment b = (Batiment) value;
+                String txt = b.getNom() + " (" + b.getX() + "," + b.getY() + ")";
+                if (b.isEnAttaque()) txt += " [ATTAQUE]";
+                if (b.isProtege()) txt += " [PROTEGE]";
+                label.setText(txt);
+
+                if (b.isEnAttaque() && !isSelected) {
+                    label.setForeground(Color.RED);
+                } else if (b.isProtege() && !isSelected) {
+                    label.setForeground(new Color(0, 128, 0));
+                }
+                return label;
+            }
+        });
+
+        int result = JOptionPane.showConfirmDialog(
+                this,
+                new JScrollPane(list),
+                "Choisir un entrepôt à défendre",
+                JOptionPane.OK_CANCEL_OPTION
+        );
+
+        if (result == JOptionPane.OK_OPTION) {
+            Batiment cible = list.getSelectedValue();
+            if (cible != null) {
+                gameMap.deployerPersonnageDefense(p, cible);
+            }
+        }
+    }
+
+    private void rafraichirInfos() {
         labelOr.setText("Or disponible : " + gameMap.getStockOr());
+        labelCout.setText("Coût actuel : " + gameMap.getCoutInvocationActuel());
+    }
+
+    private void rafraichirTexteBouton(JButton boutonInvocation) {
+        boutonInvocation.setText("Invoquer (" + gameMap.getCoutInvocationActuel() + " or)");
     }
 
     private void rafraichirListe() {
@@ -181,5 +253,6 @@ public class FenetreInvocation extends JFrame {
         for (Personnage personnage : gameMap.getPersonnages()) {
             listModel.addElement(personnage);
         }
+        rafraichirInfos();
     }
 }

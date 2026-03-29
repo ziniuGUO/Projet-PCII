@@ -39,6 +39,10 @@ public class Batiment {
     public static int porteeAttaque = 3; // Portée d'attaque de la tour de défense
     public static int cadenceAttaque = 1; // Cadence d'attaque de la tour de défense (nombre d'attaques par tour par secondes)
 
+    private Ressource.Type typeStocke;
+    private boolean enAttaque = false;
+    private boolean protege = false;
+
     // Constructeur de la classe Batiment
     public Batiment(String nom, int pointsVie, int x, int y, int coutBois, int coutFer, int coutOr) {
         this.nom = nom;
@@ -55,7 +59,9 @@ public class Batiment {
     public void construire() {
         this.estConstruit = true;
     }
-
+    public Boolean isConstruit() {
+        return estConstruit;
+    }
     // Getters et setters pour le nom du bâtiment
     public String getNom() {
         return nom;
@@ -75,6 +81,28 @@ public class Batiment {
     }
     public void setPointsVie(int pointsVie) {
         this.pointsVie = pointsVie;
+    }
+
+    public Ressource.Type getTypeStocke() {
+        return typeStocke;
+    }
+    public void setTypeStocke(Ressource.Type typeStocke) {
+        this.typeStocke = typeStocke;
+    }
+    public boolean isEnAttaque() {
+        return enAttaque;
+    }
+
+    public void setEnAttaque(boolean enAttaque) {
+        this.enAttaque = enAttaque;
+    }
+
+    public boolean isProtege() {
+        return protege;
+    }
+
+    public void setProtege(boolean protege) {
+        this.protege = protege;
     }
 
     // Perdre des points de vie lorsque le bâtiment est attaqué

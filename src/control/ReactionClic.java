@@ -1,12 +1,16 @@
 package control;
 
-import java.awt.event.*;
-import javax.swing.*;
 import model.ActionType;
+import model.Batiment;
 import model.Map;
 import model.Personnage;
 import view.FenetreInvocation;
 import view.MapPanel;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.List;
 /**
  * Gestion des interactions souris sur la map.
  * Gere la selection de tuiles au survol et au clic.
@@ -67,14 +71,12 @@ public class ReactionClic implements MouseMotionListener, MouseListener {
             return;
         }
 
-        // Clic sur l'Hotel de Ville → dialogue d'amelioration
         if (gameMap.estHotelDeVille(tileX, tileY) && SwingUtilities.isLeftMouseButton(e)) {
             ouvrirDialogueHotelDeVille();
             return;
         }
 
-        // Clic sur un bâtiment non construit → dialogue de construction
-        if (gameMap.getTerrainAt(tileX, tileY) == model.Map.BATIMENT
+        if (gameMap.getTerrainAt(tileX, tileY) == Map.BATIMENT
                 && !gameMap.estConstruit(tileX, tileY)
                 && SwingUtilities.isLeftMouseButton(e)) {
             ouvrirDialogueConstruction(tileX, tileY);
@@ -85,14 +87,23 @@ public class ReactionClic implements MouseMotionListener, MouseListener {
         if (clicked != null) {
             mapPanel.setSelectedPersonnage(clicked);
 
+            if (clicked.isChoixApresVolRequis()) {
+                ouvrirDialogueRetourOuContinuer(clicked);
+                mapPanel.repaint();
+                return;
+            }
+
             if (clicked.isPretARecuperer()) {
+                ActionType ancienneAction = clicked.getActionCourante();
                 int gain = gameMap.recupererRecompenseEtRappeler(clicked);
+
                 String msg;
-                if (clicked.getActionCourante() == ActionType.DEFENDRE || gain == 0) {
-                    msg = "Mission terminée. Le personnage est retourné à l'autel.";
+                if (ancienneAction == ActionType.DEFENDRE || gain == 0) {
+                    msg = "Mission terminée. Le personnage est retourné.";
                 } else {
-                    msg = "Récompense récupérée : +" + gain + ". Le personnage retourne à l'autel.";
+                    msg = "Récompense récupérée : +" + gain;
                 }
+
                 JOptionPane.showMessageDialog(mapPanel, msg);
                 mapPanel.setSelectedPersonnage(null);
                 mapPanel.repaint();
@@ -103,7 +114,6 @@ public class ReactionClic implements MouseMotionListener, MouseListener {
                 ouvrirDialogueActions(clicked);
             }
             mapPanel.repaint();
-            return;
         }
     }
 
@@ -132,62 +142,27 @@ public class ReactionClic implements MouseMotionListener, MouseListener {
         boolean assezOr   = inv == null || inv.getOr()   >= cout[2];
         boolean peutConstruire = assezBois && assezFer && assezOr;
 
-        // Panneau principal
-        javax.swing.JPanel panel = new javax.swing.JPanel();
-        panel.setLayout(new java.awt.GridLayout(0, 1, 4, 4));
+        JPanel panel = new JPanel(new GridLayout(0, 1, 4, 4));
+        panel.add(new JLabel("<html><b>Construire : " + nom + "</b></html>"));
+        if (cout[0] > 0) panel.add(new JLabel("Bois : " + cout[0]));
+        if (cout[1] > 0) panel.add(new JLabel("Fer : " + cout[1]));
+        if (cout[2] > 0) panel.add(new JLabel("Or : " + cout[2]));
 
-        panel.add(new javax.swing.JLabel("<html><b>Construire : " + nom + "</b></html>"));
-        panel.add(new javax.swing.JLabel(" "));
+        if (!peutConstruire) panel.add(new JLabel("Ressources insuffisantes."));
 
-        // Ligne ressource : couleur rouge si manque
-        String colorBois = assezBois ? "green" : "red";
-        String colorFer  = assezFer  ? "green" : "red";
-        String colorOr   = assezOr   ? "green" : "red";
-
-        int stockBois = inv != null ? inv.getBois() : 0;
-        int stockFer  = inv != null ? inv.getFer()  : 0;
-        int stockOr   = inv != null ? inv.getOr()   : 0;
-
-        // N'afficher que les ressources dont le coût est > 0
-        if (cout[0] > 0)
-            panel.add(new javax.swing.JLabel("<html>🪵 Bois : <font color='" + colorBois + "'><b>" + cout[0] + "</b></font> &nbsp; (vous avez : " + stockBois + ")</html>"));
-        if (cout[1] > 0)
-            panel.add(new javax.swing.JLabel("<html>⚙ Fer  : <font color='" + colorFer  + "'><b>" + cout[1] + "</b></font> &nbsp; (vous avez : " + stockFer  + ")</html>"));
-        if (cout[2] > 0)
-            panel.add(new javax.swing.JLabel("<html>🪙 Or   : <font color='" + colorOr   + "'><b>" + cout[2] + "</b></font> &nbsp; (vous avez : " + stockOr   + ")</html>"));
-
-        if (!peutConstruire)
-            panel.add(new javax.swing.JLabel("<html><font color='red'><i>Ressources insuffisantes.</i></font></html>"));
-
-        // Bouton construire activé seulement si assez de ressources
-        javax.swing.JButton btnConstruire = new javax.swing.JButton("Construire");
-        btnConstruire.setEnabled(peutConstruire);
-
-        Object[] options = { btnConstruire, "Annuler" };
-
-        javax.swing.JOptionPane pane = new javax.swing.JOptionPane(
-            panel,
-            javax.swing.JOptionPane.PLAIN_MESSAGE,
-            javax.swing.JOptionPane.OK_CANCEL_OPTION,
-            null,
-            options,
-            peutConstruire ? btnConstruire : options[1]
+        int choix = JOptionPane.showConfirmDialog(
+                mapPanel,
+                panel,
+                "Construction",
+                peutConstruire ? JOptionPane.YES_NO_OPTION : JOptionPane.DEFAULT_OPTION
         );
 
-        javax.swing.JDialog dialog = pane.createDialog(mapPanel, "Construction");
-
-        btnConstruire.addActionListener(ev -> {
+        if (peutConstruire && choix == JOptionPane.YES_OPTION) {
             String erreur = gameMap.tenterConstruction(tileX, tileY);
-            dialog.dispose();
-            if (erreur != null) {
-                javax.swing.JOptionPane.showMessageDialog(mapPanel, erreur, "Erreur", javax.swing.JOptionPane.ERROR_MESSAGE);
-            } else {
-                javax.swing.JOptionPane.showMessageDialog(mapPanel, nom + " construit !", "Construction", javax.swing.JOptionPane.INFORMATION_MESSAGE);
-            }
+            if (erreur != null) JOptionPane.showMessageDialog(mapPanel, erreur);
+            else JOptionPane.showMessageDialog(mapPanel, nom + " construit !");
             mapPanel.repaint();
-        });
-
-        dialog.setVisible(true);
+        }
     }
 
     private void ouvrirDialogueHotelDeVille() {
@@ -222,9 +197,8 @@ public class ReactionClic implements MouseMotionListener, MouseListener {
     }
 
     private void ouvrirDialogueActions(Personnage p) {
-        String titre = "Actions - " + p.getNom() + " (" + p.getRareteEtoiles() + "★)";
+        String actionActuelle = (p.getActionCourante() == null) ? "Aucune" : p.getActionCourante().getLabel();
 
-        // 3 boutons = 3 actions (version minimale)
         Object[] options = {
                 ActionType.COUPER_BOIS.getLabel(),
                 ActionType.MINER_FER.getLabel(),
@@ -234,8 +208,8 @@ public class ReactionClic implements MouseMotionListener, MouseListener {
 
         int choix = JOptionPane.showOptionDialog(
                 mapPanel,
-                "Choisis une action :\n\nAction actuelle : " + p.getActionCourante().getLabel(),
-                titre,
+                "Choisis une action :\nAction actuelle : " + actionActuelle,
+                "Actions - " + p.getNom() + " (" + p.getRareteEtoiles() + "★)",
                 JOptionPane.DEFAULT_OPTION,
                 JOptionPane.INFORMATION_MESSAGE,
                 null,
@@ -251,36 +225,91 @@ public class ReactionClic implements MouseMotionListener, MouseListener {
         }
 
         ActionType nouvelleAction = null;
-        if (choix == 0) p.setActionCourante(ActionType.COUPER_BOIS);
-        else if (choix == 1) p.setActionCourante(ActionType.MINER_FER);
-        else if (choix == 2) p.setActionCourante(ActionType.DEFENDRE);
+        if (choix == 0) nouvelleAction = ActionType.COUPER_BOIS;
+        else if (choix == 1) nouvelleAction = ActionType.MINER_FER;
+        else if (choix == 2) nouvelleAction = ActionType.DEFENDRE;
 
         if (nouvelleAction == null) return;
 
-        if (p.getActionCourante() == nouvelleAction && (p.isEnExecution() || !p.estArrive() || p.isPretARecuperer())) {
-            JOptionPane.showMessageDialog(mapPanel, "Ce personnage effectue déjà cette action.");
+        if (p.estOccupe() && !p.isChoixApresVolRequis()) {
+            JOptionPane.showMessageDialog(mapPanel,
+                    p.getNom() + " est occupé et ne peut pas recevoir une autre mission pour l'instant.");
             return;
         }
 
-        if (p.getActionCourante() != null && p.getActionCourante() != nouvelleAction
-                && (p.isEnExecution() || !p.estArrive() || p.isPretARecuperer())) {
-
-            int confirmation = JOptionPane.showConfirmDialog(
-                    mapPanel,
-                    "Ce personnage est déjà occupé.\nInterrompre l'action en cours ?\nSi tu interromps, aucune ressource ne sera obtenue.",
-                    "Confirmation",
-                    JOptionPane.YES_NO_OPTION
-            );
-
-            if (confirmation != JOptionPane.YES_OPTION) {
-                return;
-            }
-
-            p.interrompreAction();
-            p.setPretARecuperer(false);
+        if (nouvelleAction == ActionType.DEFENDRE) {
+            ouvrirDialogueDefense(p);
+            return;
         }
 
         gameMap.deployerPersonnage(p, nouvelleAction);
+        mapPanel.repaint();
+    }
+    private void ouvrirDialogueDefense(Personnage p) {
+        List<Batiment> entrepots = gameMap.getBatimentsDefenseDisponibles();
+        if (entrepots.isEmpty()) {
+            JOptionPane.showMessageDialog(mapPanel, "Aucun entrepôt construit.");
+            return;
+        }
+
+        DefaultListModel<Batiment> model = new DefaultListModel<>();
+        for (Batiment b : entrepots) model.addElement(b);
+
+        JList<Batiment> list = new JList<>(model);
+        list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        list.setCellRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> l, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                JLabel label = (JLabel) super.getListCellRendererComponent(l, value, index, isSelected, cellHasFocus);
+                Batiment b = (Batiment) value;
+                String txt = b.getNom() + " (" + b.getX() + "," + b.getY() + ")";
+                if (b.isEnAttaque()) txt += "  [ATTAQUE]";
+                if (b.isProtege()) txt += "  [PROTEGE]";
+                label.setText(txt);
+
+                if (b.isEnAttaque() && !isSelected) {
+                    label.setForeground(Color.RED);
+                } else if (b.isProtege() && !isSelected) {
+                    label.setForeground(new Color(0, 128, 0));
+                }
+                return label;
+            }
+        });
+
+        int result = JOptionPane.showConfirmDialog(
+                mapPanel,
+                new JScrollPane(list),
+                "Choisir un entrepôt à défendre",
+                JOptionPane.OK_CANCEL_OPTION
+        );
+
+        if (result == JOptionPane.OK_OPTION) {
+            Batiment cible = list.getSelectedValue();
+            if (cible != null) {
+                gameMap.deployerPersonnageDefense(p, cible);
+                mapPanel.repaint();
+            }
+        }
+    }
+    private void ouvrirDialogueRetourOuContinuer(Personnage p) {
+        Object[] options = {"Retour à l'hôtel", "Continuer défendre"};
+        int choix = JOptionPane.showOptionDialog(
+                mapPanel,
+                "Le voleur est arrivé avant " + p.getNom() + ".\nQue faire ?",
+                "Défense en retard",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.WARNING_MESSAGE,
+                null,
+                options,
+                options[0]
+        );
+
+        if (choix == 0) {
+            gameMap.choisirRetourApresVol(p, false);
+        } else if (choix == 1) {
+            gameMap.choisirRetourApresVol(p, true);
+        }
+
         mapPanel.repaint();
     }
 

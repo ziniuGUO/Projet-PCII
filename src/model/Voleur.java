@@ -2,12 +2,15 @@ package model;
 public class Voleur extends Thread{
     private int x;
     private int y;
-    private int pv;
-
+    private int pv = 100;
+    private final int vitesse = 1;
+    private final int atk = 10;
+    private Batiment cible;
+    private boolean actif = true;
+    private boolean voleReussi = false;
     public Voleur(int x, int y) {
         this.x = x;
         this.y = y;
-        this.pv = 100; // Points de vie par défaut
     }
 
     public int getX() {
@@ -22,7 +25,57 @@ public class Voleur extends Thread{
         this.x = nx;
         this.y = ny;
     }
+    public int getVitesse() {
+        return vitesse;
+    }
 
+    public int getAtk() {
+        return atk;
+    }
+
+    public int getPv() {
+        return pv;
+    }
+
+    public Batiment getCible() {
+        return cible;
+    }
+
+    public void setCible(Batiment cible) {
+        this.cible = cible;
+    }
+
+    public boolean isActif() {
+        return actif;
+    }
+
+    public void setActif(boolean actif) {
+        this.actif = actif;
+    }
+
+    public boolean isVoleReussi() {
+        return voleReussi;
+    }
+
+    public void setVoleReussi(boolean voleReussi) {
+        this.voleReussi = voleReussi;
+    }
+
+    public boolean estArrive() {
+        return cible != null && x == cible.getX() && y == cible.getY();
+    }
+    public void avancerVersCible() {
+        if (!actif || cible == null || estArrive()) return;
+
+        int pas = vitesse;
+        while (pas > 0 && !estArrive()) {
+            if (x < cible.getX()) x++;
+            else if (x > cible.getX()) x--;
+            else if (y < cible.getY()) y++;
+            else if (y > cible.getY()) y--;
+            pas--;
+        }
+    }
     // Avance d'un seul pas vers (tx, ty) : +/-1 en x et y par appel
     public void avancerVers(int tx, int ty) {
         synchronized (this) {
@@ -47,10 +100,10 @@ public class Voleur extends Thread{
 
     /* Subit une attaque et perd des points de vie */
     public void subirAttaque(int degats) {
-        synchronized (this) {
-            pv -= degats;
-            if (pv < 0) pv = 0;
-            System.out.println("Le voleur subit " + degats + " points de dégâts. PV restants : " + pv);
+        pv -= degats;
+        if (pv < 0) pv = 0;
+        if (pv == 0) {
+            actif = false;
         }
     }
 
@@ -58,7 +111,7 @@ public class Voleur extends Thread{
         return x == rx && y == ry;
     }
 
-    @Override
+   /* @Override
     public void run() {
         while (true) {
             // Le voleur doit avancer vers une ressource la nuit, et fuir quand le jour se lève
@@ -74,5 +127,5 @@ public class Voleur extends Thread{
             }
         }
     }
-
+*/
 }

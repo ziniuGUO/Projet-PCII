@@ -90,13 +90,85 @@ public class MapPanel extends JPanel {
 
         drawTitle(g2);
         drawTiles(g2);
+        drawVoleurPaths(g2);
         drawPersonnages(g2);
+        drawVoleurs(g2);
         drawGrid(g2);
         drawSelectedPersonnage(g2);
         drawSelection(g2);
         drawTooltip(g2);
         drawLegend(g2);
         drawNotification(g2);
+    }
+    private void drawVoleurs(Graphics2D g2) {
+        for (model.Voleur v : gameMap.getVoleurs()) {
+            if (v == null || !v.isActif()) continue;
+
+            int px = BORDER_PAD + v.getX() * TILE_SIZE;
+            int py = BORDER_PAD + TITLE_H + v.getY() * TILE_SIZE;
+
+            int margin = 10;
+            int size = TILE_SIZE - margin * 2;
+
+            g2.setColor(new Color(0, 0, 0, 100));
+            g2.fillOval(px + margin + 2, py + margin + 3, size, size);
+
+            g2.setColor(new Color(190, 40, 40));
+            g2.fillOval(px + margin, py + margin, size, size);
+
+            g2.setColor(Color.WHITE);
+            g2.setStroke(new BasicStroke(2f));
+            g2.drawOval(px + margin, py + margin, size, size);
+            g2.setStroke(new BasicStroke(1f));
+
+            g2.setFont(new Font("SansSerif", Font.BOLD, 18));
+            g2.setColor(Color.WHITE);
+            FontMetrics fm = g2.getFontMetrics();
+            String txt = "V";
+            int tx = px + (TILE_SIZE - fm.stringWidth(txt)) / 2;
+            int ty = py + (TILE_SIZE + fm.getAscent()) / 2 - 4;
+            g2.drawString(txt, tx, ty);
+        }
+    }
+
+    private void drawVoleurPaths(Graphics2D g2) {
+        for (model.Voleur v : gameMap.getVoleurs()) {
+            if (v == null || !v.isActif() || v.getCible() == null) continue;
+
+            int x = v.getX();
+            int y = v.getY();
+            int tx = v.getCible().getX();
+            int ty = v.getCible().getY();
+
+            Graphics2D gPath = (Graphics2D) g2.create();
+            gPath.setColor(new Color(220, 30, 30, 120));
+            gPath.setStroke(new BasicStroke(3f));
+
+            int curX = x;
+            int curY = y;
+
+            while (curX != tx || curY != ty) {
+                int nextX = curX;
+                int nextY = curY;
+
+                if (curX < tx) nextX++;
+                else if (curX > tx) nextX--;
+                else if (curY < ty) nextY++;
+                else if (curY > ty) nextY--;
+
+                int x1 = BORDER_PAD + curX * TILE_SIZE + TILE_SIZE / 2;
+                int y1 = BORDER_PAD + TITLE_H + curY * TILE_SIZE + TILE_SIZE / 2;
+                int x2 = BORDER_PAD + nextX * TILE_SIZE + TILE_SIZE / 2;
+                int y2 = BORDER_PAD + TITLE_H + nextY * TILE_SIZE + TILE_SIZE / 2;
+
+                gPath.drawLine(x1, y1, x2, y2);
+
+                curX = nextX;
+                curY = nextY;
+            }
+
+            gPath.dispose();
+        }
     }
 
     private void drawPersonnages(Graphics2D g2) {
@@ -160,74 +232,138 @@ public class MapPanel extends JPanel {
 
     private void drawTile(Graphics2D g2, int px, int py, int type, int tileX, int tileY) {
         Color color;
-        String label    = null;
+        String label = null;
         Color textColor = Color.WHITE;
+
+        model.Batiment batiment = gameMap.getBatimentAt(tileX, tileY);
 
         switch (type) {
             case 1 -> color = gameMap.getIsDay() ? COL_HERBE_JOUR : COL_HERBE_NUIT;
+
             case 2 -> {
                 String typeBat = gameMap.getTypeBatiment(tileX, tileY);
+
                 if (typeBat != null && gameMap.estConstruit(tileX, tileY)) {
                     switch (typeBat) {
-                        case Map.TYPE_HOTEL_VILLE:
+                        case Map.TYPE_HOTEL_VILLE -> {
                             color = COL_HOTEL_VILLE;
-                            label = "HOTEL Niv." + gameMap.getHotelDeVille().getNiveau(); break;
-                        case Map.TYPE_MAISON:
-                            color = COL_MAISON; label = "MAISON";
-                            textColor = new Color(60, 40, 20); break;
-                        case Map.TYPE_ENTREPOT_BOIS:
-                            color = COL_ENTREPOT; label = "ENT.BOIS"; break;
-                        case Map.TYPE_ENTREPOT_FER:
-                            color = COL_ENTREPOT; label = "ENT.FER"; break;
-                        case Map.TYPE_ENTREPOT_OR:
-                            color = COL_ENTREPOT; label = "ENT.OR"; break;
-                        case Map.TYPE_ENTREPOT_NOURR:
-                            color = COL_ENTREPOT; label = "ENT.NOURR"; break;
-                        case Map.TYPE_AUTEL_INVOC:
-                            color = COL_AUTEL_INVOC; label = "AUTEL"; break;
-                        default:
-                            color = COL_BATIMENT; label = "BATIMENT";
+                            label = "HOTEL Niv." + gameMap.getHotelDeVille().getNiveau();
+                        }
+                        case Map.TYPE_MAISON -> {
+                            color = COL_MAISON;
+                            label = "MAISON";
+                            textColor = new Color(60, 40, 20);
+                        }
+                        case Map.TYPE_ENTREPOT_BOIS -> {
+                            color = COL_ENTREPOT;
+                            label = "ENT.BOIS";
+                        }
+                        case Map.TYPE_ENTREPOT_FER -> {
+                            color = COL_ENTREPOT;
+                            label = "ENT.FER";
+                        }
+                        case Map.TYPE_ENTREPOT_OR -> {
+                            color = COL_ENTREPOT;
+                            label = "ENT.OR";
+                        }
+                        case Map.TYPE_ENTREPOT_NOURR -> {
+                            color = COL_ENTREPOT;
+                            label = "ENT.NOURR";
+                        }
+                        case Map.TYPE_AUTEL_INVOC -> {
+                            color = COL_AUTEL_INVOC;
+                            label = "AUTEL";
+                        }
+                        default -> {
+                            color = COL_BATIMENT;
+                            label = "BATIMENT";
+                        }
                     }
                 } else {
-                    // non construit : version grisée du type pour qu'on reconnaisse le bâtiment
+                    // bâtiment non construit : version grisée
                     textColor = new Color(190, 190, 190);
+
                     if (typeBat != null) {
                         switch (typeBat) {
-                            case Map.TYPE_HOTEL_VILLE:    color = new Color(110, 65, 65);  label = "HOTEL";     break;
-                            case Map.TYPE_MAISON:         color = new Color(115, 100, 85); label = "MAISON";    break;
-                            case Map.TYPE_ENTREPOT_BOIS:  color = new Color(55, 85, 65);   label = "ENT.BOIS";  break;
-                            case Map.TYPE_ENTREPOT_FER:   color = new Color(65, 75, 95);   label = "ENT.FER";   break;
-                            case Map.TYPE_ENTREPOT_OR:    color = new Color(105, 95, 45);  label = "ENT.OR";    break;
-                            case Map.TYPE_ENTREPOT_NOURR: color = new Color(85, 70, 50);   label = "ENT.NOURR"; break;
-                            case Map.TYPE_AUTEL_INVOC:    color = new Color(80, 50, 100);  label = "AUTEL";     break;
-                            default: color = COL_BATIMENT; label = "CONSTRUIRE";
+                            case Map.TYPE_HOTEL_VILLE -> {
+                                color = new Color(110, 65, 65);
+                                label = "HOTEL";
+                            }
+                            case Map.TYPE_MAISON -> {
+                                color = new Color(115, 100, 85);
+                                label = "MAISON";
+                            }
+                            case Map.TYPE_ENTREPOT_BOIS -> {
+                                color = new Color(55, 85, 65);
+                                label = "ENT.BOIS";
+                            }
+                            case Map.TYPE_ENTREPOT_FER -> {
+                                color = new Color(65, 75, 95);
+                                label = "ENT.FER";
+                            }
+                            case Map.TYPE_ENTREPOT_OR -> {
+                                color = new Color(105, 95, 45);
+                                label = "ENT.OR";
+                            }
+                            case Map.TYPE_ENTREPOT_NOURR -> {
+                                color = new Color(85, 70, 50);
+                                label = "ENT.NOURR";
+                            }
+                            case Map.TYPE_AUTEL_INVOC -> {
+                                color = new Color(80, 50, 100);
+                                label = "AUTEL";
+                            }
+                            default -> {
+                                color = COL_BATIMENT;
+                                label = "CONSTRUIRE";
+                            }
                         }
                     } else {
-                        color = COL_BATIMENT; label = "CONSTRUIRE";
+                        color = COL_BATIMENT;
+                        label = "CONSTRUIRE";
                     }
                 }
             }
+
             case 3 -> {
                 float tauxBois = (float) gameMap.getStockBoisForet() / gameMap.getStockBoisForetMax();
-                color = new Color(20, 90 + (int)(120 * tauxBois), 20);
+                color = new Color(20, 90 + (int) (120 * tauxBois), 20);
                 label = "BOIS " + gameMap.getStockBoisForet();
             }
-            case 4 -> { color = COL_FER;        label = "FER"; }
-            case 5 -> { color = COL_OR;          label = "OR";  textColor = new Color(100, 70, 0); }
-            case 6 -> { color = COL_NOURRITURE;  label = "NOURR."; }
+
+            case 4 -> {
+                color = COL_FER;
+                label = "FER";
+            }
+
+            case 5 -> {
+                color = COL_OR;
+                label = "OR";
+                textColor = new Color(100, 70, 0);
+            }
+
+            case 6 -> {
+                color = COL_NOURRITURE;
+                label = "NOURR.";
+            }
+
             default -> color = gameMap.getIsDay() ? COL_HERBE_JOUR : COL_HERBE_NUIT;
         }
 
-        // surbrillance de la zone d'action du personnage selectionne
+        // surbrillance de la zone d'action du personnage sélectionné
         ActionType actionAffichee = null;
-        if (selectedPersonnage != null && selectedPersonnage.isDeploye())
+        if (selectedPersonnage != null && selectedPersonnage.isDeploye()) {
             actionAffichee = selectedPersonnage.getActionCourante();
-        else if (gameMap.getPersonnageMiseEnValeur() != null)
+        } else if (gameMap.getPersonnageMiseEnValeur() != null) {
             actionAffichee = gameMap.getActionMiseEnValeur();
+        }
 
         if (gameMap.caseCorrespondAAction(type, actionAffichee)) {
-            if (actionAffichee == ActionType.COUPER_BOIS)   color = new Color( 40, 170,  40);
-            else if (actionAffichee == ActionType.MINER_FER) color = new Color(120, 120, 210);
+            if (actionAffichee == ActionType.COUPER_BOIS) {
+                color = new Color(40, 170, 40);
+            } else if (actionAffichee == ActionType.MINER_FER) {
+                color = new Color(120, 120, 210);
+            }
         }
 
         g2.setColor(color);
@@ -236,16 +372,40 @@ public class MapPanel extends JPanel {
         // bordure selon l'état du bâtiment
         if (type == 2 && gameMap.getTypeBatiment(tileX, tileY) != null) {
             if (gameMap.estConstruit(tileX, tileY)) {
-                // construit : bordure pleine épaisse
+                // bordure normale
                 g2.setColor(new Color(0, 0, 0, 80));
                 g2.setStroke(new BasicStroke(2f));
                 g2.drawRect(px + 1, py + 1, TILE_SIZE - 2, TILE_SIZE - 2);
+
+                // bâtiment attaqué : cadre rouge
+                if (batiment != null && batiment.isEnAttaque()) {
+                    g2.setColor(new Color(255, 40, 40, 220));
+                    g2.setStroke(new BasicStroke(4f));
+                    g2.drawRect(px + 2, py + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+
+                    g2.setFont(new Font("SansSerif", Font.BOLD, 12));
+                    g2.drawString("!", px + TILE_SIZE - 12, py + 14);
+                }
+
+                // bâtiment protégé : cadre vert
+                if (batiment != null && batiment.isProtege()) {
+                    g2.setColor(new Color(40, 220, 60, 220));
+                    g2.setStroke(new BasicStroke(4f));
+                    g2.drawRect(px + 4, py + 4, TILE_SIZE - 8, TILE_SIZE - 8);
+                }
+
                 g2.setStroke(new BasicStroke(1f));
             } else {
-                // non construit : bordure pointillée pour indiquer "à construire"
                 float[] dash = {4f, 4f};
                 g2.setColor(new Color(200, 200, 200, 120));
-                g2.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10f, dash, 0f));
+                g2.setStroke(new BasicStroke(
+                        1.5f,
+                        BasicStroke.CAP_BUTT,
+                        BasicStroke.JOIN_MITER,
+                        10f,
+                        dash,
+                        0f
+                ));
                 g2.drawRect(px + 1, py + 1, TILE_SIZE - 2, TILE_SIZE - 2);
                 g2.setStroke(new BasicStroke(1f));
             }
@@ -259,8 +419,10 @@ public class MapPanel extends JPanel {
             FontMetrics fm = g2.getFontMetrics();
             int textX = px + (TILE_SIZE - fm.stringWidth(label)) / 2;
             int textY = py + (TILE_SIZE + fm.getAscent()) / 2 - 2;
+
             g2.setColor(new Color(0, 0, 0, 100));
             g2.drawString(label, textX + 1, textY + 1);
+
             g2.setColor(textColor);
             g2.drawString(label, textX, textY);
         }
@@ -290,7 +452,16 @@ public class MapPanel extends JPanel {
     private void drawTooltip(Graphics2D g2) {
         if (selectedX < 0) return;
         String text;
-        if (hoveredPersonnage != null) {
+        model.Voleur hoveredVoleur = gameMap.getVoleurAt(selectedX, selectedY);
+        if (hoveredVoleur != null) {
+            text = String.format("Voleur | ATK: %d | Vitesse: %d | Cible: (%d,%d)",
+                    hoveredVoleur.getAtk(),
+                    hoveredVoleur.getVitesse(),
+                    hoveredVoleur.getCible() != null ? hoveredVoleur.getCible().getX() : -1,
+                    hoveredVoleur.getCible() != null ? hoveredVoleur.getCible().getY() : -1
+            );
+        }
+        else if (hoveredPersonnage != null) {
             String etat;
             if (hoveredPersonnage.isPretARecuperer())  etat = "Mission terminée - clique pour récupérer";
             else if (hoveredPersonnage.isEnExecution()) etat = "En exécution";

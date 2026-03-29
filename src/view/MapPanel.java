@@ -24,7 +24,8 @@ public class MapPanel extends JPanel {
     private static final Color COL_HOTEL_VILLE = new Color(180,  60,  60);
     private static final Color COL_MAISON      = new Color(210, 180, 140);
     private static final Color COL_ENTREPOT    = new Color(100, 140, 180);
-    private static final Color COL_AUTEL_INVOC = new Color(140,  60, 180);
+    private static final Color COL_AUTEL_INVOC   = new Color(140,  60, 180);
+    private static final Color COL_STATUE_DRAGON = new Color(220, 130,   0); // doré dragon
 
     private static final Color COL_BG       = new Color( 40,  30,  20);
     private static final Color COL_GRID     = new Color(  0,   0,   0,  40);
@@ -274,6 +275,10 @@ public class MapPanel extends JPanel {
                             color = COL_AUTEL_INVOC;
                             label = "AUTEL";
                         }
+                        case Map.TYPE_STATUE_DRAGON -> {
+                            color = COL_STATUE_DRAGON;
+                            label = "🐉 STATUE";
+                        }
                         default -> {
                             color = COL_BATIMENT;
                             label = "BATIMENT";
@@ -312,6 +317,10 @@ public class MapPanel extends JPanel {
                             case Map.TYPE_AUTEL_INVOC -> {
                                 color = new Color(80, 50, 100);
                                 label = "AUTEL";
+                            }
+                            case Map.TYPE_STATUE_DRAGON -> {
+                                color = new Color(90, 55, 0);
+                                label = "STATUE";
                             }
                             default -> {
                                 color = COL_BATIMENT;

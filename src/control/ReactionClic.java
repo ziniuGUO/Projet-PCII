@@ -1,16 +1,15 @@
 package control;
 
+import java.awt.*;
+import java.awt.event.*;
+import java.util.List;
+import javax.swing.*;
 import model.ActionType;
 import model.Batiment;
 import model.Map;
 import model.Personnage;
 import view.FenetreInvocation;
 import view.MapPanel;
-
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.*;
-import java.util.List;
 /**
  * Gestion des interactions souris sur la map.
  * Gere la selection de tuiles au survol et au clic.
@@ -22,13 +21,15 @@ public class ReactionClic implements MouseMotionListener, MouseListener {
     private final int tileSize;
     private final int borderPad;
     private final int titleHeight;
+    private final Runnable onVictoire;
 
-    public ReactionClic(Map gameMap, MapPanel mapPanel, int tileSize, int borderPad, int titleHeight) {
-        this.gameMap = gameMap;
-        this.mapPanel = mapPanel;
-        this.tileSize = tileSize;
-        this.borderPad = borderPad;
+    public ReactionClic(Map gameMap, MapPanel mapPanel, int tileSize, int borderPad, int titleHeight, Runnable onVictoire) {
+        this.gameMap     = gameMap;
+        this.mapPanel    = mapPanel;
+        this.tileSize    = tileSize;
+        this.borderPad   = borderPad;
         this.titleHeight = titleHeight;
+        this.onVictoire  = onVictoire;
     }
 
     // ── MouseMotionListener ────────────────────────────────────────────────────
@@ -121,6 +122,23 @@ public class ReactionClic implements MouseMotionListener, MouseListener {
         String type = gameMap.getTypeBatiment(tileX, tileY);
         if (type == null) return;
 
+        // Vérifications spéciales pour la statue
+        if (model.Map.TYPE_STATUE_DRAGON.equals(type)) {
+            if (!gameMap.tousBatimentsConstructs()) {
+                JOptionPane.showMessageDialog(mapPanel,
+                    "Tous les bâtiments doivent être construits avant d'ériger la Grande Statue du Dragon !",
+                    "Conditions non remplies", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            if (gameMap.getHotelDeVille().getNiveau() < model.HotelDeVille.NIVEAU_MAX) {
+                JOptionPane.showMessageDialog(mapPanel,
+                    "L'Hôtel de Ville doit être au niveau " + model.HotelDeVille.NIVEAU_MAX
+                    + " (actuel : " + gameMap.getHotelDeVille().getNiveau() + ") !",
+                    "Conditions non remplies", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        }
+
         int[] cout = gameMap.getCoutConstruction(tileX, tileY);
         if (cout == null) return;
 
@@ -133,6 +151,7 @@ public class ReactionClic implements MouseMotionListener, MouseListener {
             case model.Map.TYPE_ENTREPOT_FER   -> "Entrepôt de Fer";
             case model.Map.TYPE_ENTREPOT_OR    -> "Trésorerie (Or)";
             case model.Map.TYPE_ENTREPOT_NOURR -> "Grenier (Nourriture)";
+            case model.Map.TYPE_STATUE_DRAGON  -> "Grande Statue du Dragon";
             default -> type;
         };
 
@@ -160,9 +179,67 @@ public class ReactionClic implements MouseMotionListener, MouseListener {
         if (peutConstruire && choix == JOptionPane.YES_OPTION) {
             String erreur = gameMap.tenterConstruction(tileX, tileY);
             if (erreur != null) JOptionPane.showMessageDialog(mapPanel, erreur);
-            else JOptionPane.showMessageDialog(mapPanel, nom + " construit !");
+            else {
+                JOptionPane.showMessageDialog(mapPanel, nom + " construit !");
+                if (model.Map.TYPE_STATUE_DRAGON.equals(type)) {
+                    afficherEcranVictoire();
+                }
+            }
             mapPanel.repaint();
         }
+    }
+
+    private void afficherEcranVictoire() {
+        JDialog dialog = new JDialog(
+                (JFrame) SwingUtilities.getWindowAncestor(mapPanel),
+                "Victoire !", true);
+        dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+        dialog.setUndecorated(true);
+
+        JPanel panel = new JPanel(new BorderLayout(0, 20));
+        panel.setBackground(new Color(15, 10, 5));
+        panel.setBorder(BorderFactory.createLineBorder(new Color(220, 130, 0), 4));
+
+        // Titre
+        JLabel titre = new JLabel("🐉  VOUS AVEZ GAGNÉ  🐉", SwingConstants.CENTER);
+        titre.setFont(new Font("Serif", Font.BOLD, 36));
+        titre.setForeground(new Color(255, 200, 30));
+        titre.setBorder(BorderFactory.createEmptyBorder(30, 30, 0, 30));
+
+        // Sous-titre
+        JLabel sousTitre = new JLabel(
+            "<html><center>La Grande Statue du Dragon s'élève sur votre cité.<br>Votre règne est légendaire !</center></html>",
+            SwingConstants.CENTER);
+        sousTitre.setFont(new Font("Serif", Font.ITALIC, 16));
+        sousTitre.setForeground(new Color(210, 180, 100));
+        sousTitre.setBorder(BorderFactory.createEmptyBorder(0, 30, 0, 30));
+
+        // Bouton rejouer
+        JButton btnRejouer = new JButton("⚔  Rejouer");
+        btnRejouer.setFont(new Font("SansSerif", Font.BOLD, 18));
+        btnRejouer.setBackground(new Color(180, 60, 0));
+        btnRejouer.setForeground(Color.WHITE);
+        btnRejouer.setFocusPainted(false);
+        btnRejouer.setBorder(BorderFactory.createEmptyBorder(12, 40, 12, 40));
+        btnRejouer.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnRejouer.addActionListener(e -> {
+            dialog.dispose();
+            if (onVictoire != null) onVictoire.run();
+        });
+
+        JPanel btnPanel = new JPanel();
+        btnPanel.setBackground(new Color(15, 10, 5));
+        btnPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 30, 0));
+        btnPanel.add(btnRejouer);
+
+        panel.add(titre,     BorderLayout.NORTH);
+        panel.add(sousTitre, BorderLayout.CENTER);
+        panel.add(btnPanel,  BorderLayout.SOUTH);
+
+        dialog.setContentPane(panel);
+        dialog.pack();
+        dialog.setLocationRelativeTo(mapPanel);
+        dialog.setVisible(true);
     }
 
     private void ouvrirDialogueHotelDeVille() {

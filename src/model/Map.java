@@ -22,12 +22,14 @@ public class Map {
     public static final String TYPE_ENTREPOT_OR    = "ENTREPOT_OR";
     public static final String TYPE_ENTREPOT_NOURR = "ENTREPOT_NOURR";
     public static final String TYPE_AUTEL_INVOC    = "AUTEL_INVOC";
+    public static final String TYPE_STATUE_DRAGON  = "STATUE_DRAGON";
 
     public static final int[] COUT_MAISON         = {2000, 0, 0};
     public static final int[] COUT_ENTREPOT_BOIS  = {2000, 0, 0};
     public static final int[] COUT_ENTREPOT_FER   = {2000, 0, 0};
     public static final int[] COUT_ENTREPOT_OR    = {2000, 0, 0};
     public static final int[] COUT_ENTREPOT_NOURR = {2000, 0, 0};
+    public static final int[] COUT_STATUE_DRAGON  = {25000, 0, 0};
 
     private final HashMap<String, String>  typesBatiments      = new HashMap<>();
     private final HashMap<String, Boolean> batimentsConstruits = new HashMap<>();
@@ -183,6 +185,23 @@ public class Map {
         );
     }
 
+    /** Vérifie que tous les bâtiments (hors HdV, Autel et Statue) sont construits. */
+    public boolean tousBatimentsConstructs() {
+        for (java.util.Map.Entry<String, String> entry : typesBatiments.entrySet()) {
+            String t = entry.getValue();
+            if (TYPE_HOTEL_VILLE.equals(t))   continue;
+            if (TYPE_AUTEL_INVOC.equals(t))   continue;
+            if (TYPE_STATUE_DRAGON.equals(t)) continue;
+            Boolean construit = batimentsConstruits.get(entry.getKey());
+            if (construit == null || !construit) return false;
+        }
+        return true;
+    }
+
+    public boolean estStatueDragon(int x, int y) {
+        return TYPE_STATUE_DRAGON.equals(getTypeBatiment(x, y));
+    }
+
     public String ameliorerHotelDeVille() {
         if (hotelDeVille.estAuNiveauMax())
             return "L'Hôtel de Ville est déjà au niveau maximum !";
@@ -213,12 +232,23 @@ public class Map {
             case TYPE_ENTREPOT_FER   -> COUT_ENTREPOT_FER;
             case TYPE_ENTREPOT_OR    -> COUT_ENTREPOT_OR;
             case TYPE_ENTREPOT_NOURR -> COUT_ENTREPOT_NOURR;
+            case TYPE_STATUE_DRAGON  -> COUT_STATUE_DRAGON;
             default -> null;
         };
     }
 
     public String tenterConstruction(int x, int y) {
         if (inventaire == null) return "Inventaire non initialisé.";
+
+        String type = getTypeBatiment(x, y);
+
+        // Conditions spéciales pour la Grande Statue du Dragon
+        if (TYPE_STATUE_DRAGON.equals(type)) {
+            if (hotelDeVille.getNiveau() < HotelDeVille.NIVEAU_MAX)
+                return "L'Hôtel de Ville doit être au niveau " + HotelDeVille.NIVEAU_MAX + " (actuel : " + hotelDeVille.getNiveau() + ") !";
+            if (!tousBatimentsConstructs())
+                return "Tous les bâtiments doivent être construits avant d'ériger la statue !";
+        }
 
         int[] cout = getCoutConstruction(x, y);
         if (cout == null) return "Ce bâtiment ne peut pas être construit.";
@@ -549,6 +579,8 @@ public class Map {
         setTerrainAt(4, 13, BATIMENT);
         setTerrainAt(16, 13, BATIMENT);
         setTerrainAt(17, 5, BATIMENT);
+
+        setTerrainAt(10, 9, BATIMENT); // Grande Statue du Dragon
     }
 
     private void initBatiments() {
@@ -569,6 +601,9 @@ public class Map {
         placerBatimentAvecType(17, 5, TYPE_ENTREPOT_NOURR, false, new Grenier("Grenier", 300, 17, 5, 0, 0, 0));
 
         placerBatimentAvecType(autelX, autelY, TYPE_AUTEL_INVOC, true, autelInvocation);
+
+        placerBatimentAvecType(10, 9, TYPE_STATUE_DRAGON, false,
+                new GrandeStatueDragon("Grande Statue du Dragon", 9999, 10, 9, 25000, 0, 0));
     }
 
     private void placerBatimentAvecType(int x, int y, String type, boolean construit, Batiment batiment) {

@@ -8,6 +8,7 @@ import java.util.Random;
 
 public class Map {
 
+    /* attributs */
     public static final int HERBE       = 1;
     public static final int BATIMENT    = 2;
     public static final int FORET_BOIS  = 3;
@@ -80,6 +81,7 @@ public class Map {
         this.ressourceListener = l;
     }
 
+    /* constructeur */
     public Map(int width, int height) {
         this.width = width;
         this.height = height;
@@ -96,6 +98,7 @@ public class Map {
         demarrerThreadRegenerationForet();
     }
 
+    /* getters */
     public List<Personnage> getPersonnages() {
         return personnages;
     }
@@ -156,6 +159,76 @@ public class Map {
         return notificationMessage;
     }
 
+    private int getCentreX() {
+        return width / 2;
+    }
+
+    private int getCentreY() {
+        return height / 2;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public Personnage getPersonnageAt(int x, int y) {
+        for (Personnage p : personnages) {
+            if (p.isDeploye() && p.getX() == x && p.getY() == y) return p;
+        }
+        return null;
+    }
+
+    public Batiment getBatimentAt(int x, int y) {
+        return batimentsObjets.get(cle(x, y));
+    }
+
+    public List<Batiment> getBatimentsDefenseDisponibles() {
+        List<Batiment> list = new ArrayList<>();
+        for (Batiment b : batimentsObjets.values()) {
+            if (b == null) continue;
+            if (!Boolean.TRUE.equals(b.isConstruit())) continue;
+            if (b == hotelDeVille) continue;
+            if (b.getTypeStocke() == null) continue;
+            list.add(b);
+        }
+        if (list.isEmpty()) {
+            list.add(hotelDeVille);
+        }
+
+        return list;
+    }
+
+    public int getTerrainAt(int x, int y) {
+        if (isValidPosition(x, y)) return terrain[y][x];
+        return -1;
+    }
+
+    private List<Point> getCasesPourAction(ActionType action) {
+        List<Point> result = new ArrayList<>();
+        int terrainType;
+
+        switch (action) {
+            case COUPER_BOIS -> terrainType = FORET_BOIS;
+            case MINER_FER   -> terrainType = MINE_FER;
+            default -> {
+                result.add(new Point(getCentreX(), getCentreY()));
+                return result;
+            }
+        }
+
+        for (int x = 0; x < width; x++) {
+            for (int y = height - 1; y >= 0; y--) {
+                if (terrain[y][x] == terrainType) result.add(new Point(x, y));
+            }
+        }
+        return result;
+    }
+
+    /* setters */
     public void clearNotificationMessage() {
         notificationMessage = "";
     }
@@ -168,6 +241,12 @@ public class Map {
         }
         recalculerCapacites();
     }
+
+    public void setTerrainAt(int x, int y, int type) {
+        if (isValidPosition(x, y)) terrain[y][x] = type;
+    }
+
+    /* fonctions */
 
     public void recalculerCapacites() {
         if (inventaire == null) return;
@@ -432,42 +511,6 @@ public class Map {
         };
     }
 
-    public Personnage getPersonnageAt(int x, int y) {
-        for (Personnage p : personnages) {
-            if (p.isDeploye() && p.getX() == x && p.getY() == y) return p;
-        }
-        return null;
-    }
-
-    public Batiment getBatimentAt(int x, int y) {
-        return batimentsObjets.get(cle(x, y));
-    }
-
-    public List<Batiment> getBatimentsDefenseDisponibles() {
-        List<Batiment> list = new ArrayList<>();
-        for (Batiment b : batimentsObjets.values()) {
-            if (b == null) continue;
-            if (!Boolean.TRUE.equals(b.isConstruit())) continue;
-            if (b == hotelDeVille) continue;
-            if (b.getTypeStocke() == null) continue;
-            list.add(b);
-        }
-        if (list.isEmpty()) {
-            list.add(hotelDeVille);
-        }
-
-        return list;
-    }
-
-    public int getTerrainAt(int x, int y) {
-        if (isValidPosition(x, y)) return terrain[y][x];
-        return -1;
-    }
-
-    public void setTerrainAt(int x, int y, int type) {
-        if (isValidPosition(x, y)) terrain[y][x] = type;
-    }
-
     public void placerBatiment(int x, int y) {
         setTerrainAt(x, y, BATIMENT);
     }
@@ -504,43 +547,6 @@ public class Map {
             if (p.getCibleX() == x && p.getCibleY() == y) return true;
         }
         return false;
-    }
-
-    private List<Point> getCasesPourAction(ActionType action) {
-        List<Point> result = new ArrayList<>();
-        int terrainType;
-
-        switch (action) {
-            case COUPER_BOIS -> terrainType = FORET_BOIS;
-            case MINER_FER   -> terrainType = MINE_FER;
-            default -> {
-                result.add(new Point(getCentreX(), getCentreY()));
-                return result;
-            }
-        }
-
-        for (int x = 0; x < width; x++) {
-            for (int y = height - 1; y >= 0; y--) {
-                if (terrain[y][x] == terrainType) result.add(new Point(x, y));
-            }
-        }
-        return result;
-    }
-
-    private int getCentreX() {
-        return width / 2;
-    }
-
-    private int getCentreY() {
-        return height / 2;
-    }
-
-    public int getWidth() {
-        return width;
-    }
-
-    public int getHeight() {
-        return height;
     }
 
     private void initializeDefaultMap() {
@@ -716,6 +722,24 @@ public class Map {
         notificationMessage = cible.getNom() + " est maintenant protégé par " + p.getNom() + ".";
     }
 
+    private void demarrerThreadRegenerationForet() {
+        Thread t = new Thread(() -> {
+            while (true) {
+                if (stockBoisForet < stockBoisForetMax) stockBoisForet++;
+                try {
+                    Thread.sleep(2500);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+            }
+        });
+
+        t.setDaemon(true);
+        t.start();
+    }
+
+    /* fonction en lien avec les voleurs */
     private void mettreAJourVoleurs() {
         List<Voleur> aSupprimer = new ArrayList<>();
 
@@ -889,22 +913,6 @@ public class Map {
         notificationMessage = p.getNom() + " continue à protéger " + cible.getNom() + ".";
     }
 
-    private void demarrerThreadRegenerationForet() {
-        Thread t = new Thread(() -> {
-            while (true) {
-                if (stockBoisForet < stockBoisForetMax) stockBoisForet++;
-                try {
-                    Thread.sleep(2500);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    return;
-                }
-            }
-        });
-
-        t.setDaemon(true);
-        t.start();
-    }
     public Voleur getVoleurAt(int x, int y) {
         for (Voleur v : voleurs) {
             if (v != null && v.isActif() && v.getX() == x && v.getY() == y) {

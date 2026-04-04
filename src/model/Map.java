@@ -24,12 +24,14 @@ public class Map {
     public static final String TYPE_ENTREPOT_NOURR = "ENTREPOT_NOURR";
     public static final String TYPE_AUTEL_INVOC    = "AUTEL_INVOC";
     public static final String TYPE_STATUE_DRAGON  = "STATUE_DRAGON";
+    public static final String TYPE_TOUR_DEFENSE   = "TOUR_DEFENSE";
 
     public static final int[] COUT_MAISON         = {2000, 0, 0};
     public static final int[] COUT_ENTREPOT_BOIS  = {2000, 0, 0};
     public static final int[] COUT_ENTREPOT_FER   = {2000, 0, 0};
     public static final int[] COUT_ENTREPOT_OR    = {2000, 0, 0};
     public static final int[] COUT_ENTREPOT_NOURR = {2000, 0, 0};
+    public static final int[] COUT_TOUR_DEFENSE   = {1500, 500, 0};
     public static final int[] COUT_STATUE_DRAGON  = {25000, 0, 0};
 
     private final HashMap<String, String>  typesBatiments      = new HashMap<>();
@@ -307,6 +309,7 @@ public class Map {
 
         return switch (type) {
             case TYPE_MAISON         -> COUT_MAISON;
+            case TYPE_TOUR_DEFENSE   -> COUT_TOUR_DEFENSE;
             case TYPE_ENTREPOT_BOIS  -> COUT_ENTREPOT_BOIS;
             case TYPE_ENTREPOT_FER   -> COUT_ENTREPOT_FER;
             case TYPE_ENTREPOT_OR    -> COUT_ENTREPOT_OR;
@@ -581,6 +584,12 @@ public class Map {
         setTerrainAt(13, 10, BATIMENT);
         setTerrainAt(10, 13, BATIMENT);
 
+        setTerrainAt(10, 5, BATIMENT);
+        setTerrainAt(2, 8, BATIMENT);
+        setTerrainAt(6, 13, BATIMENT);
+        setTerrainAt(14, 13, BATIMENT);
+        setTerrainAt(17, 7, BATIMENT);
+
         setTerrainAt(2, 6, BATIMENT);
         setTerrainAt(4, 13, BATIMENT);
         setTerrainAt(16, 13, BATIMENT);
@@ -600,6 +609,12 @@ public class Map {
         placerBatimentAvecType(13, 4, TYPE_MAISON, false, new Maison("Maison", 200, 13, 4, 0, 0, 0));
         placerBatimentAvecType(7, 10, TYPE_MAISON, false, new Maison("Maison", 200, 7, 10, 0, 0, 0));
         placerBatimentAvecType(13, 10, TYPE_MAISON, false, new Maison("Maison", 200, 13, 10, 0, 0, 0));
+
+        placerBatimentAvecType(10, 5, TYPE_TOUR_DEFENSE, false, new TourDefense("Tour de Défense", 200, 10, 5, 0, 0, 0));
+        placerBatimentAvecType(2, 8, TYPE_TOUR_DEFENSE, false, new TourDefense("Tour de Défense", 200, 2, 8, 0, 0, 0));
+        placerBatimentAvecType(6, 13, TYPE_TOUR_DEFENSE, false, new TourDefense("Tour de Défense", 200, 6, 13, 0, 0, 0));
+        placerBatimentAvecType(14, 13, TYPE_TOUR_DEFENSE, false, new TourDefense("Tour de Défense", 200, 14, 13, 0, 0, 0));
+        placerBatimentAvecType(17, 7, TYPE_TOUR_DEFENSE, false, new TourDefense("Tour de Défense", 200, 17, 7, 0, 0, 0));
 
         placerBatimentAvecType(2, 6, TYPE_ENTREPOT_BOIS, false, new EntrepotBois("Entrepôt Bois", 300, 2, 6, 0, 0, 0));
         placerBatimentAvecType(4, 13, TYPE_ENTREPOT_FER, false, new EntrepotFer("Entrepôt Fer", 300, 4, 13, 0, 0, 0));

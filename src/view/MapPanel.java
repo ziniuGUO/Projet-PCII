@@ -123,7 +123,7 @@ public class MapPanel extends JPanel {
     }
     private void drawVoleurs(Graphics2D g2) {
         for (model.Voleur v : gameMap.getVoleurs()) {
-            if (v == null || !v.isActif()) continue;
+            if (v == null) continue;
 
             int px = BORDER_PAD + v.getX() * TILE_SIZE;
             int py = BORDER_PAD + TITLE_H + v.getY() * TILE_SIZE;
@@ -154,7 +154,7 @@ public class MapPanel extends JPanel {
 
     private void drawVoleurPaths(Graphics2D g2) {
         for (model.Voleur v : gameMap.getVoleurs()) {
-            if (v == null || !v.isActif() || v.getCible() == null) continue;
+            if (v == null || v.getCible() == null) continue;
 
             int x = v.getX();
             int y = v.getY();

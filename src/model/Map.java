@@ -668,7 +668,7 @@ public class Map {
                 tenterSpawnVoleur();
 
                 try {
-                    Thread.sleep(350);
+                    Thread.sleep(800);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     return;

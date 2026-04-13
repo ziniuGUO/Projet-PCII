@@ -785,6 +785,10 @@ public class Map {
         List<Batiment> cibles = getBatimentsDefenseDisponibles();
         if (cibles.isEmpty()) return;
 
+        // Appliquer la probabilité d'apparition selon jour/nuit : 20% jour, 80% nuit
+        double probabilite = jourNuit.getIsDay() ? 0.20 : 0.80;
+        if (random.nextDouble() > probabilite) return;
+
         dernierSpawnVoleur = now;
         spawnVoleur();
     }

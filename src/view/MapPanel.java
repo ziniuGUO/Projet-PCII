@@ -1,6 +1,9 @@
 package view;
 
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import model.ActionType;
 import model.Map;
@@ -47,6 +50,9 @@ public class MapPanel extends JPanel {
     private final Map gameMap;
     private int selectedX = -1;
     private int selectedY = -1;
+
+    // Images des terrains (null = fallback couleur)
+    private BufferedImage imgForet;
     private Personnage hoveredPersonnage  = null;
     private Personnage selectedPersonnage = null;
 
@@ -65,6 +71,19 @@ public class MapPanel extends JPanel {
         int panelH = BORDER_PAD * 2 + gameMap.getHeight() * TILE_SIZE + TITLE_H + 30;
         setPreferredSize(new Dimension(panelW, panelH));
         setBackground(COL_BG);
+
+        // Chargement des images (fallback couleur si fichier absent)
+        imgForet = chargerImage("/images/foret.png");
+    }
+
+    private BufferedImage chargerImage(String chemin) {
+        try {
+            var stream = getClass().getResourceAsStream(chemin);
+            if (stream == null) return null;
+            return ImageIO.read(stream);
+        } catch (IOException e) {
+            return null;
+        }
     }
 
     public void setSelectedPosition(int x, int y) { this.selectedX = x; this.selectedY = y; repaint(); }
@@ -277,7 +296,7 @@ public class MapPanel extends JPanel {
                         }
                         case Map.TYPE_STATUE_DRAGON -> {
                             color = COL_STATUE_DRAGON;
-                            label = "🐉 STATUE";
+                            label = " STATUE";
                         }
                         default -> {
                             color = COL_BATIMENT;
@@ -377,6 +396,11 @@ public class MapPanel extends JPanel {
 
         g2.setColor(color);
         g2.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+
+        // Image terrain (par-dessus le fond couleur)
+        if (type == 3 && imgForet != null) {
+            g2.drawImage(imgForet, px, py, TILE_SIZE, TILE_SIZE, null);
+        }
 
         // bordure selon l'état du bâtiment
         if (type == 2 && gameMap.getTypeBatiment(tileX, tileY) != null) {

@@ -54,6 +54,28 @@ public class MapPanel extends JPanel {
 
     // Images des terrains (null = fallback couleur)
     private BufferedImage imgForet;
+    private BufferedImage imgFer;
+    private BufferedImage imgOr;
+    private BufferedImage imgMaison;
+    private BufferedImage imgMaisonNonConstruite;
+    private BufferedImage imgHotelDeVille;
+    private BufferedImage imgHotelDeVilleNiveau5;
+    private BufferedImage imgHerbre;
+    private BufferedImage imgHerbreNuit;
+    private BufferedImage imgNouriture;
+    private BufferedImage imgInvocation;
+    private BufferedImage imgTowerDef;
+    private BufferedImage imgEntrBois;
+    private BufferedImage imgEntrFer;
+    private BufferedImage imgEntrOr;
+    private BufferedImage imgEntrNouriture;
+    private BufferedImage imgVoleur;
+    private BufferedImage img1Etoile;
+    private BufferedImage img2Etoiles;
+    private BufferedImage img3Etoiles;
+    private BufferedImage img4Etoiles;
+    private BufferedImage img5Etoiles;
+    private BufferedImage imgStatueDragon;
     private Personnage hoveredPersonnage  = null;
     private Personnage selectedPersonnage = null;
 
@@ -74,7 +96,29 @@ public class MapPanel extends JPanel {
         setBackground(COL_BG);
 
         // Chargement des images (fallback couleur si fichier absent)
-        imgForet = chargerImage("/images/foret.png");
+        imgForet               = chargerImage("/images/arbre.png");
+        imgFer                 = chargerImage("/images/fer.png");
+        imgOr                  = chargerImage("/images/or.png");
+        imgMaison              = chargerImage("/images/maison.png");
+        imgMaisonNonConstruite = chargerImage("/images/maisonnonconstruite.png");
+        imgHotelDeVille        = chargerImage("/images/hoteldeville.jpg");
+        imgHotelDeVilleNiveau5 = chargerImage("/images/hoteldevilleniveau5.jpg");
+        imgHerbre              = chargerImage("/images/herbre.jpg");
+        imgHerbreNuit          = chargerImage("/images/herbrenuit.jpg");
+        imgNouriture           = chargerImage("/images/nouriture.jpg");
+        imgInvocation          = chargerImage("/images/invocation.jpg");
+        imgTowerDef            = chargerImage("/images/towerdef.jpg");
+        imgEntrBois            = chargerImage("/images/entrbois.jpg");
+        imgEntrFer             = chargerImage("/images/entrfer.jpg");
+        imgEntrOr              = chargerImage("/images/entror.jpg");
+        imgEntrNouriture       = chargerImage("/images/entrnouriture.jpg");
+        imgVoleur              = chargerImage("/images/voleur.jpg");
+        img1Etoile             = chargerImage("/images/1etoile.png");
+        img2Etoiles            = chargerImage("/images/2etoiles.png");
+        img3Etoiles            = chargerImage("/images/3etoiles.png");
+        img4Etoiles            = chargerImage("/images/4etoiles.png");
+        img5Etoiles            = chargerImage("/images/5etoiles.png");
+        imgStatueDragon        = chargerImage("/images/statutdudragon.png");
     }
 
     private BufferedImage chargerImage(String chemin) {
@@ -110,6 +154,7 @@ public class MapPanel extends JPanel {
         g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
         drawTitle(g2);
+        drawCycleJourNuit(g2);
         drawTiles(g2);
         drawVoleurPaths(g2);
         drawPersonnages(g2);
@@ -127,28 +172,29 @@ public class MapPanel extends JPanel {
 
             int px = BORDER_PAD + v.getX() * TILE_SIZE;
             int py = BORDER_PAD + TITLE_H + v.getY() * TILE_SIZE;
+            int margin = 4;
 
-            int margin = 10;
-            int size = TILE_SIZE - margin * 2;
-
-            g2.setColor(new Color(0, 0, 0, 100));
-            g2.fillOval(px + margin + 2, py + margin + 3, size, size);
-
-            g2.setColor(new Color(190, 40, 40));
-            g2.fillOval(px + margin, py + margin, size, size);
-
-            g2.setColor(Color.WHITE);
-            g2.setStroke(new BasicStroke(2f));
-            g2.drawOval(px + margin, py + margin, size, size);
-            g2.setStroke(new BasicStroke(1f));
-
-            g2.setFont(new Font("SansSerif", Font.BOLD, 18));
-            g2.setColor(Color.WHITE);
-            FontMetrics fm = g2.getFontMetrics();
-            String txt = "V";
-            int tx = px + (TILE_SIZE - fm.stringWidth(txt)) / 2;
-            int ty = py + (TILE_SIZE + fm.getAscent()) / 2 - 4;
-            g2.drawString(txt, tx, ty);
+            if (imgVoleur != null) {
+                g2.drawImage(imgVoleur, px + margin, py + margin, TILE_SIZE - margin * 2, TILE_SIZE - margin * 2, null);
+            } else {
+                // fallback cercle rouge avec "V"
+                int size = TILE_SIZE - margin * 2 - 6;
+                g2.setColor(new Color(0, 0, 0, 100));
+                g2.fillOval(px + margin + 2, py + margin + 3, size, size);
+                g2.setColor(new Color(190, 40, 40));
+                g2.fillOval(px + margin, py + margin, size, size);
+                g2.setColor(Color.WHITE);
+                g2.setStroke(new BasicStroke(2f));
+                g2.drawOval(px + margin, py + margin, size, size);
+                g2.setStroke(new BasicStroke(1f));
+                g2.setFont(new Font("SansSerif", Font.BOLD, 18));
+                g2.setColor(Color.WHITE);
+                FontMetrics fm = g2.getFontMetrics();
+                String txt = "V";
+                int tx = px + (TILE_SIZE - fm.stringWidth(txt)) / 2;
+                int ty = py + (TILE_SIZE + fm.getAscent()) / 2 - 4;
+                g2.drawString(txt, tx, ty);
+            }
         }
     }
 
@@ -197,29 +243,53 @@ public class MapPanel extends JPanel {
             if (!p.isDeploye()) continue;
             int px = BORDER_PAD + p.getX() * TILE_SIZE;
             int py = BORDER_PAD + TITLE_H  + p.getY() * TILE_SIZE;
-            int margin = 8, size = TILE_SIZE - margin * 2;
-            int cx = px + margin, cy = py + margin;
+            int margin = 4;
 
-            g2.setColor(new Color(0, 0, 0, 90));
-            g2.fillOval(cx + 2, cy + 3, size, size);
+            // Choisir l'image selon les étoiles
+            BufferedImage imgPerso = switch (p.getRareteEtoiles()) {
+                case 1 -> img1Etoile;
+                case 2 -> img2Etoiles;
+                case 3 -> img3Etoiles;
+                case 4 -> img4Etoiles;
+                case 5 -> img5Etoiles;
+                default -> null;
+            };
 
-            if (p.isPretARecuperer())       g2.setColor(new Color(255, 180,  60));
-            else if (p.isEnExecution())     g2.setColor(new Color(220, 100, 100));
-            else                            g2.setColor(new Color( 60, 120, 200));
-            g2.fillOval(cx, cy, size, size);
+            if (imgPerso != null) {
+                g2.drawImage(imgPerso, px + margin, py + margin, TILE_SIZE - margin * 2, TILE_SIZE - margin * 2, null);
+            } else {
+                // fallback cercle coloré
+                int size = TILE_SIZE - margin * 2;
+                int cx = px + margin, cy = py + margin;
+                g2.setColor(new Color(0, 0, 0, 90));
+                g2.fillOval(cx + 2, cy + 3, size, size);
+                if (p.isPretARecuperer())       g2.setColor(new Color(255, 180,  60));
+                else if (p.isEnExecution())     g2.setColor(new Color(220, 100, 100));
+                else                            g2.setColor(new Color( 60, 120, 200));
+                g2.fillOval(cx, cy, size, size);
+                g2.setColor(new Color(255, 255, 255, 180));
+                g2.setStroke(new BasicStroke(2f));
+                g2.drawOval(cx, cy, size, size);
+                g2.setStroke(new BasicStroke(1f));
+                String initiales = getInitiales(p.getNom());
+                g2.setFont(new Font("SansSerif", Font.BOLD, 16));
+                g2.setColor(Color.WHITE);
+                FontMetrics fm = g2.getFontMetrics();
+                int tx = px + (TILE_SIZE - fm.stringWidth(initiales)) / 2;
+                int ty = py + (TILE_SIZE + fm.getAscent()) / 2 - 4;
+                g2.drawString(initiales, tx, ty);
+            }
 
-            g2.setColor(new Color(255, 255, 255, 180));
-            g2.setStroke(new BasicStroke(2f));
-            g2.drawOval(cx, cy, size, size);
-            g2.setStroke(new BasicStroke(1f));
-
-            String initiales = getInitiales(p.getNom());
-            g2.setFont(new Font("SansSerif", Font.BOLD, 16));
-            g2.setColor(Color.WHITE);
-            FontMetrics fm = g2.getFontMetrics();
-            int tx = px + (TILE_SIZE - fm.stringWidth(initiales)) / 2;
-            int ty = py + (TILE_SIZE + fm.getAscent()) / 2 - 4;
-            g2.drawString(initiales, tx, ty);
+            // Indicateur d'état (petit cercle en bas à droite)
+            if (p.isPretARecuperer() || p.isEnExecution()) {
+                Color couleurEtat = p.isPretARecuperer() ? new Color(255, 180, 60) : new Color(220, 100, 100);
+                g2.setColor(couleurEtat);
+                g2.fillOval(px + TILE_SIZE - 12, py + TILE_SIZE - 12, 10, 10);
+                g2.setColor(Color.WHITE);
+                g2.setStroke(new BasicStroke(1.5f));
+                g2.drawOval(px + TILE_SIZE - 12, py + TILE_SIZE - 12, 10, 10);
+                g2.setStroke(new BasicStroke(1f));
+            }
         }
     }
 
@@ -231,6 +301,48 @@ public class MapPanel extends JPanel {
         g2.setStroke(new BasicStroke(4f));
         g2.drawOval(px + 4, py + 4, TILE_SIZE - 8, TILE_SIZE - 8);
         g2.setStroke(new BasicStroke(1f));
+    }
+
+    private void drawCycleJourNuit(Graphics2D g2) {
+        boolean isDay = gameMap.getIsDay();
+        long restantMs = gameMap.jourNuit.getTempsRestantMs();
+        long sec = restantMs / 1000;
+        long min = sec / 60;
+        long secRestante = sec % 60;
+
+        String icone  = isDay ? "☀" : "🌙";
+        String phase  = isDay ? "Jour" : "Nuit";
+        String chrono = String.format("%d:%02d", min, secRestante);
+        String texte  = icone + " " + phase + " — " + chrono;
+
+        // Couleurs selon phase
+        Color couleurFond  = isDay ? new Color(255, 200, 50, 200) : new Color(30, 30, 100, 220);
+        Color couleurTexte = isDay ? new Color(80, 50, 0)          : new Color(180, 200, 255);
+
+        // Position : colonne de droite, au-dessus de la légende
+        int lx = BORDER_PAD + gameMap.getWidth() * TILE_SIZE + 16;
+        int boxW = 122; // même largeur que les blocs légende
+        int boxH = 28;
+        int by = BORDER_PAD + TITLE_H - boxH - 8; // juste au-dessus de "TERRAINS"
+
+        g2.setFont(new Font("SansSerif", Font.BOLD, 13));
+        FontMetrics fm = g2.getFontMetrics();
+
+        // Fond arrondi
+        g2.setColor(couleurFond);
+        g2.fillRoundRect(lx - 6, by, boxW, boxH, 10, 10);
+
+        // Bordure
+        g2.setColor(isDay ? new Color(200, 150, 0) : new Color(80, 80, 180));
+        g2.setStroke(new BasicStroke(1.5f));
+        g2.drawRoundRect(lx - 6, by, boxW, boxH, 10, 10);
+        g2.setStroke(new BasicStroke(1f));
+
+        // Texte centré
+        int tw = fm.stringWidth(texte);
+        int tx = lx - 6 + (boxW - tw) / 2;
+        g2.setColor(couleurTexte);
+        g2.drawString(texte, tx, by + fm.getAscent() + 5);
     }
 
     private void drawTitle(Graphics2D g2) {
@@ -408,8 +520,49 @@ public class MapPanel extends JPanel {
         g2.fillRect(px, py, TILE_SIZE, TILE_SIZE);
 
         // Image terrain (par-dessus le fond couleur)
+        if (type == 1) {
+            BufferedImage imgHerbe = gameMap.getIsDay() ? imgHerbre : imgHerbreNuit;
+            if (imgHerbe != null) g2.drawImage(imgHerbe, px, py, TILE_SIZE, TILE_SIZE, null);
+        }
         if (type == 3 && imgForet != null) {
             g2.drawImage(imgForet, px, py, TILE_SIZE, TILE_SIZE, null);
+        }
+        if (type == 4 && imgFer != null) {
+            g2.drawImage(imgFer, px, py, TILE_SIZE, TILE_SIZE, null);
+        }
+        if (type == 5 && imgOr != null) {
+            g2.drawImage(imgOr, px, py, TILE_SIZE, TILE_SIZE, null);
+        }
+        if (type == 6 && imgNouriture != null) {
+            g2.drawImage(imgNouriture, px, py, TILE_SIZE, TILE_SIZE, null);
+        }
+
+        // Images bâtiments
+        if (type == 2) {
+            String typeBat = gameMap.getTypeBatiment(tileX, tileY);
+            if (typeBat != null) {
+                if (gameMap.estConstruit(tileX, tileY)) {
+                    switch (typeBat) {
+                        case Map.TYPE_MAISON -> { if (imgMaison != null) g2.drawImage(imgMaison, px, py, TILE_SIZE, TILE_SIZE, null); }
+                        case Map.TYPE_HOTEL_VILLE -> {
+                            boolean niveauMax = gameMap.getHotelDeVille().estAuNiveauMax();
+                            BufferedImage imgHdv = niveauMax ? imgHotelDeVilleNiveau5 : imgHotelDeVille;
+                            if (imgHdv != null) g2.drawImage(imgHdv, px, py, TILE_SIZE, TILE_SIZE, null);
+                        }
+                        case Map.TYPE_AUTEL_INVOC  -> { if (imgInvocation != null) g2.drawImage(imgInvocation, px, py, TILE_SIZE, TILE_SIZE, null); }
+                        case Map.TYPE_TOUR_DEFENSE -> { if (imgTowerDef   != null) g2.drawImage(imgTowerDef,   px, py, TILE_SIZE, TILE_SIZE, null); }
+                        case Map.TYPE_ENTREPOT_BOIS  -> { if (imgEntrBois     != null) g2.drawImage(imgEntrBois,     px, py, TILE_SIZE, TILE_SIZE, null); }
+                        case Map.TYPE_ENTREPOT_FER   -> { if (imgEntrFer      != null) g2.drawImage(imgEntrFer,      px, py, TILE_SIZE, TILE_SIZE, null); }
+                        case Map.TYPE_ENTREPOT_OR    -> { if (imgEntrOr       != null) g2.drawImage(imgEntrOr,       px, py, TILE_SIZE, TILE_SIZE, null); }
+                        case Map.TYPE_ENTREPOT_NOURR -> { if (imgEntrNouriture != null) g2.drawImage(imgEntrNouriture, px, py, TILE_SIZE, TILE_SIZE, null); }
+                        case Map.TYPE_STATUE_DRAGON  -> { if (imgStatueDragon  != null) g2.drawImage(imgStatueDragon,  px, py, TILE_SIZE, TILE_SIZE, null); }
+                    }
+                } else {
+                    if (imgMaisonNonConstruite != null) {
+                        g2.drawImage(imgMaisonNonConstruite, px, py, TILE_SIZE, TILE_SIZE, null);
+                    }
+                }
+            }
         }
 
         // bordure selon l'état du bâtiment
@@ -457,7 +610,33 @@ public class MapPanel extends JPanel {
             g2.drawRect(px, py, TILE_SIZE - 1, TILE_SIZE - 1);
         }
 
-        if (label != null) {
+        // N'afficher le label texte que si aucune image ne couvre cette tuile
+        boolean aUneImage = false;
+        if (type == 1 && (gameMap.getIsDay() ? imgHerbre : imgHerbreNuit) != null) aUneImage = true;
+        if (type == 3 && imgForet    != null) aUneImage = true;
+        if (type == 4 && imgFer      != null) aUneImage = true;
+        if (type == 5 && imgOr       != null) aUneImage = true;
+        if (type == 6 && imgNouriture != null) aUneImage = true;
+        if (type == 2) {
+            String typeBat = gameMap.getTypeBatiment(tileX, tileY);
+            if (typeBat != null) {
+                if (gameMap.estConstruit(tileX, tileY)) {
+                    if (Map.TYPE_MAISON.equals(typeBat)         && imgMaison             != null) aUneImage = true;
+                    if (Map.TYPE_HOTEL_VILLE.equals(typeBat)    && (imgHotelDeVille != null || imgHotelDeVilleNiveau5 != null)) aUneImage = true;
+                    if (Map.TYPE_AUTEL_INVOC.equals(typeBat)    && imgInvocation          != null) aUneImage = true;
+                    if (Map.TYPE_TOUR_DEFENSE.equals(typeBat)   && imgTowerDef            != null) aUneImage = true;
+                    if (Map.TYPE_ENTREPOT_BOIS.equals(typeBat)  && imgEntrBois            != null) aUneImage = true;
+                    if (Map.TYPE_ENTREPOT_FER.equals(typeBat)   && imgEntrFer             != null) aUneImage = true;
+                    if (Map.TYPE_ENTREPOT_OR.equals(typeBat)    && imgEntrOr              != null) aUneImage = true;
+                    if (Map.TYPE_ENTREPOT_NOURR.equals(typeBat) && imgEntrNouriture != null) aUneImage = true;
+                    if (Map.TYPE_STATUE_DRAGON.equals(typeBat)  && imgStatueDragon  != null) aUneImage = true;
+                } else {
+                    if (imgMaisonNonConstruite != null) aUneImage = true;
+                }
+            }
+        }
+
+        if (label != null && !aUneImage) {
             g2.setFont(FONT_RESOURCE);
             FontMetrics fm = g2.getFontMetrics();
             int textX = px + (TILE_SIZE - fm.stringWidth(label)) / 2;

@@ -280,6 +280,8 @@ public class ReactionClic implements MouseMotionListener, MouseListener {
                 ActionType.COUPER_BOIS.getLabel(),
                 ActionType.MINER_FER.getLabel(),
                 ActionType.DEFENDRE.getLabel(),
+                ActionType.CHERCHER_NOURRITURE.getLabel(),
+                ActionType.CHERCHER_OR.getLabel(),
                 "Rappeler"
         };
 
@@ -294,7 +296,7 @@ public class ReactionClic implements MouseMotionListener, MouseListener {
                 options[0]
         );
 
-        if (choix == 3) {
+        if (choix == 5) {
             gameMap.rappelerPersonnage(p);
             mapPanel.setSelectedPersonnage(null);
             mapPanel.repaint();
@@ -305,7 +307,8 @@ public class ReactionClic implements MouseMotionListener, MouseListener {
         if (choix == 0) nouvelleAction = ActionType.COUPER_BOIS;
         else if (choix == 1) nouvelleAction = ActionType.MINER_FER;
         else if (choix == 2) nouvelleAction = ActionType.DEFENDRE;
-
+        else if (choix == 3) nouvelleAction = ActionType.CHERCHER_NOURRITURE;
+        else if (choix == 4) nouvelleAction = ActionType.CHERCHER_OR;
         if (nouvelleAction == null) return;
 
         if (p.estOccupe() && !p.isChoixApresVolRequis()) {

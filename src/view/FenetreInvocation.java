@@ -163,7 +163,9 @@ public class FenetreInvocation extends JFrame {
         Object[] options = {
                 ActionType.COUPER_BOIS.getLabel(),
                 ActionType.MINER_FER.getLabel(),
-                ActionType.DEFENDRE.getLabel()
+                ActionType.DEFENDRE.getLabel(),
+                ActionType.CHERCHER_NOURRITURE.getLabel(),
+                ActionType.CHERCHER_OR.getLabel()
         };
 
         int choix = JOptionPane.showOptionDialog(
@@ -181,7 +183,8 @@ public class FenetreInvocation extends JFrame {
         if (choix == 0) nouvelleAction = ActionType.COUPER_BOIS;
         else if (choix == 1) nouvelleAction = ActionType.MINER_FER;
         else if (choix == 2) nouvelleAction = ActionType.DEFENDRE;
-
+        else if (choix == 3) nouvelleAction = ActionType.CHERCHER_NOURRITURE;
+        else if (choix == 4) nouvelleAction = ActionType.CHERCHER_OR;
         if (nouvelleAction == null) return;
 
         if (nouvelleAction == ActionType.DEFENDRE) {

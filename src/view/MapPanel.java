@@ -513,6 +513,10 @@ public class MapPanel extends JPanel {
                 color = new Color(40, 170, 40);
             } else if (actionAffichee == ActionType.MINER_FER) {
                 color = new Color(120, 120, 210);
+            } else if (actionAffichee == ActionType.CHERCHER_OR) {
+                color = new Color(255, 215, 0);
+            } else if (actionAffichee == ActionType.CHERCHER_NOURRITURE) {
+                color = new Color(180, 140, 60);
             }
         }
 

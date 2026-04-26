@@ -6,8 +6,9 @@ package model;
 public enum ActionType {
     COUPER_BOIS("Couper du bois"),
     MINER_FER("Miner du fer"),
-    DEFENDRE("Defendre / Veiller");
-
+    DEFENDRE("Defendre / Veiller"),
+    CHERCHER_NOURRITURE("chercher nourriture"),
+    CHERCHER_OR("Miner de l'or");
     private final String label;
 
     ActionType(String label) {

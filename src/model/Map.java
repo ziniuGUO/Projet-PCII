@@ -215,7 +215,9 @@ public class Map {
 
         switch (action) {
             case COUPER_BOIS -> terrainType = FORET_BOIS;
-            case MINER_FER   -> terrainType = MINE_FER;
+            case MINER_FER -> terrainType = MINE_FER;
+            case CHERCHER_OR -> terrainType = GISEMENT_OR;
+            case CHERCHER_NOURRITURE -> terrainType = CUEILLETTE;
             default -> {
                 result.add(new Point(getCentreX(), getCentreY()));
                 return result;
@@ -229,7 +231,6 @@ public class Map {
         }
         return result;
     }
-
     /* setters */
     public void clearNotificationMessage() {
         notificationMessage = "";
@@ -412,6 +413,14 @@ public class Map {
     public void deployerPersonnage(Personnage p, ActionType action) {
         if (p == null) return;
 
+        if (inventaire != null) {
+            boolean ok = inventaire.retirerRessource(Ressource.Type.NOURRITURE, 30);
+            if (!ok) {
+                notificationMessage = "Pas assez de nourriture pour envoyer un personnage.";
+                return;
+            }
+        }
+
         if (!p.isDeploye()) {
             p.setPosition(hotelDeVille.getX(), hotelDeVille.getY());
             p.setDeploye(true);
@@ -468,8 +477,10 @@ public class Map {
         int gain = 0;
         switch (p.getActionCourante()) {
             case COUPER_BOIS -> gain = calculerGainRessource(p, Ressource.Type.BOIS);
-            case MINER_FER   -> gain = calculerGainRessource(p, Ressource.Type.FER);
-            case DEFENDRE    -> gain = 0;
+            case MINER_FER -> gain = calculerGainRessource(p, Ressource.Type.FER);
+            case CHERCHER_OR -> gain = calculerGainRessource(p, Ressource.Type.OR);
+            case CHERCHER_NOURRITURE -> gain = calculerGainRessource(p, Ressource.Type.NOURRITURE);
+            case DEFENDRE -> gain = 0;
         }
 
         appliquerGain(p.getActionCourante(), gain);
@@ -500,6 +511,14 @@ public class Map {
                 if (inventaire != null) inventaire.ajouterRessource(Ressource.Type.FER, gain);
                 else if (ressourceListener != null) ressourceListener.onRessourceGagnee(Ressource.Type.FER, gain);
             }
+            case CHERCHER_OR -> {
+                if (inventaire != null) inventaire.ajouterRessource(Ressource.Type.OR, gain);
+                else if (ressourceListener != null) ressourceListener.onRessourceGagnee(Ressource.Type.OR, gain);
+            }
+            case CHERCHER_NOURRITURE -> {
+                if (inventaire != null) inventaire.ajouterRessource(Ressource.Type.NOURRITURE, gain);
+                else if (ressourceListener != null) ressourceListener.onRessourceGagnee(Ressource.Type.NOURRITURE, gain);
+            }
             case DEFENDRE -> {
             }
         }
@@ -509,8 +528,10 @@ public class Map {
         if (action == null) return false;
         return switch (action) {
             case COUPER_BOIS -> terrainType == FORET_BOIS;
-            case MINER_FER   -> terrainType == MINE_FER;
-            case DEFENDRE    -> false;
+            case MINER_FER -> terrainType == MINE_FER;
+            case CHERCHER_OR -> terrainType == GISEMENT_OR;
+            case CHERCHER_NOURRITURE -> terrainType == CUEILLETTE;
+            case DEFENDRE -> false;
         };
     }
 

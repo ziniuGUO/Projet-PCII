@@ -13,6 +13,17 @@ public class Inventaire {
     private int maxOr         = 500;
     private int maxNourriture = 750;
 
+    public Inventaire() {
+    }
+
+    public Inventaire(int bois, int fer, int or, int nourriture) {
+        this.bois = bois;
+        this.fer = fer;
+        this.or = or;
+        this.nourriture = nourriture;
+    }
+
+
     public interface OnInventaireChangeListener {
         void onInventaireChange(int bois, int fer, int or, int nourriture);
     }

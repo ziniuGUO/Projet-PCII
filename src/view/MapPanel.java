@@ -25,7 +25,7 @@ public class MapPanel extends JPanel {
 
     // couleurs des batiments construits
     private static final Color COL_HOTEL_VILLE = new Color(180,  60,  60);
-    private static final Color COL_MAISON      = new Color(210, 180, 140);
+    private static final Color COL_MAISON      = new Color(200, 180, 140);
     private static final Color COL_ENTREPOT    = new Color(100, 140, 180);
     private static final Color COL_TOUR_DEFENSE = new Color(120, 120, 210);
     private static final Color COL_AUTEL_INVOC   = new Color(140,  60, 180);

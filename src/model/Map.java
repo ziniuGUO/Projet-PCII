@@ -791,8 +791,17 @@ public class Map {
             if (!v.estArrive()) {
                 v.avancerVersCible();
             } else {
-                resoudreVolOuDefense(v);
-                aSupprimer.add(v);
+                // Si le voleur vient d'arriver, démarrer le pillage (il reste visible pendant quelques ticks)
+                if (!v.isEnPillage()) {
+                    v.commencerPillage();
+                } else {
+                    // Décrémenter le compteur de pillage ; quand terminé, résoudre le vol/defense
+                    boolean fini = v.mettreAJourPillage();
+                    if (fini) {
+                        resoudreVolOuDefense(v);
+                        aSupprimer.add(v);
+                    }
+                }
             }
         }
 

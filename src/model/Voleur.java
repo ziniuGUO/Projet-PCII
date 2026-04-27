@@ -8,6 +8,10 @@ public class Voleur extends Thread{
     private Batiment cible;
     private boolean actif = true;
     private boolean voleReussi = false;
+    // Nouvel état : le voleur peut rester sur la case pour piller pendant plusieurs ticks
+    private boolean enPillage = false;
+    private int ticksPillage = 0;
+    private static final int TEMPS_PILLAGE_TICKS = 3; // nombre d'itérations de mise à jour
     public Voleur(int x, int y) {
         this.x = x;
         this.y = y;

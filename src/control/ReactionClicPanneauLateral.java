@@ -31,10 +31,8 @@ public class ReactionClicPanneauLateral extends MouseAdapter {
 
     @Override
     public void mouseClicked(MouseEvent e) {
-        // Clics uniquement dans la colonne droite (personnages)
-        if (e.getX() < panneauLateral.getWidth() / 2) return;
 
-        Personnage p = panneauLateral.trouverPersonnageAuClic(e.getY());
+        Personnage p = panneauLateral.trouverPersonnageAuClic(e.getX(), e.getY());
         if (p != null) ouvrirDialogueActions(p);
     }
 

@@ -55,24 +55,56 @@ public class PanneauLateral extends JPanel {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,      RenderingHints.VALUE_ANTIALIAS_ON);
         g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-        int halfW = getWidth() / 2;
+        int halfW    = getWidth() / 2;
+        int ligneH   = 52;
+        int headerH  = 36; // titre + séparateur
+        int panelH   = getHeight();
 
         // Colonne gauche : population + ressources
         int y = 10;
         y = dessinerBlocPopulation(g2, 0, halfW, y);
-        dessinerBlocRessources(g2, 0, halfW, y + 10);
+        int yApresRessources = y + 10;
+        dessinerBlocRessources(g2, 0, halfW, yApresRessources);
 
-        // Colonne droite : personnages
-        dessinerBlocPersonnages(g2, halfW, getWidth(), 10);
+        // Calcul hauteur bloc ressources pour savoir où commence la zone libre à gauche
+        int nbLignesRess = 4;
+        int ligneHRess   = 28;
+        int blocHRess    = nbLignesRess * ligneHRess + 34;
+        int yLibreGauche = yApresRessources + blocHRess + 10;
+
+        // Capacité colonne droite (depuis y=10)
+        int maxDansColonneDroite = Math.max(0, (panelH - 10 - headerH) / ligneH);
+        // Capacité zone sous ressources (colonne gauche basse)
+        int maxSousRessources    = Math.max(0, (panelH - yLibreGauche - headerH) / ligneH);
+
+        List<Personnage> persos = gameMap.getPersonnages();
+        int total = persos.size();
+
+        // Répartition : droite d'abord, puis sous ressources (gauche bas)
+        int nbDroite       = Math.min(total, maxDansColonneDroite);
+        int nbSousRess     = Math.min(total - nbDroite, maxSousRessources);
+
+        List<Personnage> persosDroite   = persos.subList(0, nbDroite);
+        List<Personnage> persosSousRess = persos.subList(nbDroite, nbDroite + nbSousRess);
+
+        // Colonne droite
+        dessinerBlocPersonnages(g2, halfW, getWidth(), 10, persosDroite, total > 0 && nbDroite == 0);
+
+        // Sous ressources (colonne gauche) si overflow
+        if (!persosSousRess.isEmpty()) {
+            dessinerBlocPersonnages(g2, 0, halfW, yLibreGauche, persosSousRess, false);
+        }
     }
 
-    // ── Bloc personnages (colonne droite) ─────────────────────────────────────
+    // ── Bloc personnages ──────────────────────────────────────────────────────
 
-    private void dessinerBlocPersonnages(Graphics2D g2, int xStart, int xEnd, int y) {
-        List<Personnage> persos = gameMap.getPersonnages();
+    private void dessinerBlocPersonnages(Graphics2D g2, int xStart, int xEnd, int y,
+                                         List<Personnage> persos, boolean forceEmpty) {
         int w      = xEnd - xStart;
         int ligneH = 52;
-        int blocH  = persos.isEmpty() ? 50 : persos.size() * ligneH + 36;
+        int blocH  = (persos.isEmpty() && forceEmpty) ? 50
+                   : persos.isEmpty() ? 50
+                   : persos.size() * ligneH + 36;
 
         g2.setColor(BG_BLOC);
         g2.fillRoundRect(xStart + 6, y, w - 12, blocH, 10, 10);
@@ -84,9 +116,12 @@ public class PanneauLateral extends JPanel {
         g2.drawLine(xStart + 14, y + 20, xEnd - 14, y + 20);
 
         if (persos.isEmpty()) {
-            g2.setFont(new Font("SansSerif", Font.ITALIC, 11));
-            g2.setColor(new Color(150, 130, 90));
-            g2.drawString("Aucun personnage invoqué", xStart + 14, y + 40);
+            if (forceEmpty) {
+                g2.setFont(new Font("SansSerif", Font.ITALIC, 11));
+                g2.setColor(new Color(150, 130, 90));
+                g2.drawString("Aucun personnage invoqué", xStart + 14, y + 40);
+            }
+            // sinon c'est un bloc overflow vide, on ne l'affiche pas
         } else {
             for (int i = 0; i < persos.size(); i++) {
                 dessinerLignePersonnage(g2, persos.get(i), xStart + 10, y + 28 + i * ligneH, w - 20);
@@ -232,15 +267,43 @@ public class PanneauLateral extends JPanel {
         }
     }
 
-    public Personnage trouverPersonnageAuClic(int mouseY) {
+    public Personnage trouverPersonnageAuClic(int mouseX, int mouseY) {
         List<Personnage> persos = gameMap.getPersonnages();
-        int ligneH = 52;
-        int debutY = 38;
-        for (int i = 0; i < persos.size(); i++) {
-            int yHaut = debutY + i * ligneH;
-            int yBas  = yHaut + 46;
-            if (mouseY >= yHaut && mouseY <= yBas) return persos.get(i);
+        int halfW    = getWidth() / 2;
+        int ligneH   = 52;
+        int headerH  = 36;
+        int panelH   = getHeight();
+
+        // Mêmes seuils que paintComponent
+        int yApresPopBloc    = 66;
+        int yApresRessources = yApresPopBloc + 10;
+        int blocHRess        = 4 * 28 + 34;
+        int yLibreGauche     = yApresRessources + blocHRess + 10;
+
+        int maxDroite  = Math.max(0, (panelH - 10 - headerH) / ligneH);
+        int maxSousRess= Math.max(0, (panelH - yLibreGauche - headerH) / ligneH);
+
+        int nbDroite   = Math.min(persos.size(), maxDroite);
+        int nbSousRess = Math.min(persos.size() - nbDroite, maxSousRess);
+
+        // Clic colonne droite
+        if (mouseX >= halfW) {
+            int debutY = 38;
+            for (int i = 0; i < nbDroite; i++) {
+                int yHaut = debutY + i * ligneH;
+                if (mouseY >= yHaut && mouseY <= yHaut + 46) return persos.get(i);
+            }
         }
+
+        // Clic sous ressources (colonne gauche basse)
+        if (mouseX < halfW) {
+            int debutY = yLibreGauche + 28;
+            for (int i = 0; i < nbSousRess; i++) {
+                int yHaut = debutY + i * ligneH;
+                if (mouseY >= yHaut && mouseY <= yHaut + 46) return persos.get(nbDroite + i);
+            }
+        }
+
         return null;
     }
 }

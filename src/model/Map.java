@@ -2,10 +2,10 @@ package model;
 
 import java.awt.Point;
 import java.util.ArrayList;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Map {
 
@@ -455,13 +455,13 @@ public class Map {
         return (int) cout;
     }
 
-    /** 5 places de base (HdV) + 5 par maison construite. */
+    /** 6 places de base (HdV) + 3 par maison construite (max 30 avec 8 maisons). */
     public int getCapacitePersonnages() {
-        int capacite = 5;
+        int capacite = 6;
         for (java.util.Map.Entry<String, String> entry : typesBatiments.entrySet()) {
             if (TYPE_MAISON.equals(entry.getValue())) {
                 Boolean construit = batimentsConstruits.get(entry.getKey());
-                if (Boolean.TRUE.equals(construit)) capacite += 5;
+                if (Boolean.TRUE.equals(construit)) capacite += 3;
             }
         }
         return capacite;

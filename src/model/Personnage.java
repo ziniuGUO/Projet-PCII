@@ -2,7 +2,7 @@ package model;
 
 public class Personnage {
 
-    public static final long DUREE_ACTION = 5000L;
+    public static final long DUREE_ACTION = 15000L;
     public static final long DUREE_SOIN = 5000L;
 
     private final String nom;

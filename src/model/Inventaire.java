@@ -2,16 +2,16 @@ package model;
 
 public class Inventaire {
 
-    private int bois       = 1000;
-    private int fer        = 750;
-    private int or         = 500;
-    private int nourriture = 750;
+    private int bois       = 200;
+    private int fer        = 100;
+    private int or         = 800;
+    private int nourriture = 500;
 
     // Capacités max par ressource (-1 = illimité)
-    private int maxBois       = 2000;
-    private int maxFer        = 750;
-    private int maxOr         = 500;
-    private int maxNourriture = 750;
+    private int maxBois       = 3000;
+    private int maxFer        = 2000;
+    private int maxOr         = 2000;
+    private int maxNourriture = 2000;
 
     public Inventaire() {
     }

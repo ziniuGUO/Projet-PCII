@@ -1,15 +1,14 @@
 package view;
 
-import model.ActionType;
-import model.Batiment;
-import model.Map;
-import model.Personnage;
-
-import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
+import javax.swing.*;
+import model.ActionType;
+import model.Batiment;
+import model.Map;
+import model.Personnage;
 
 public class FenetreInvocation extends JFrame {
 
@@ -141,11 +140,18 @@ public class FenetreInvocation extends JFrame {
     }
 
     private void invoquer(JButton boutonInvocation) {
-        Personnage personnage = gameMap.invoquerPersonnage();
-        if (personnage == null) {
+        if (gameMap.capacitePersonnagesPleine()) {
+            JOptionPane.showMessageDialog(this,
+                "Capacité maximale atteinte (" + gameMap.getNombrePersonnages() + "/" + gameMap.getCapacitePersonnages() + ").\nConstruisez des maisons pour augmenter la capacité.");
+            return;
+        }
+        if (!gameMap.orSuffisantPourInvoquer()) {
             JOptionPane.showMessageDialog(this, "Pas assez d'or pour invoquer.");
             return;
         }
+
+        Personnage personnage = gameMap.invoquerPersonnage();
+        if (personnage == null) return;
 
         labelResultat.setText("Obtenu : " + personnage.getNom() + " - " + personnage.getRareteEtoiles() + "★");
         rafraichirInfos();
@@ -244,11 +250,21 @@ public class FenetreInvocation extends JFrame {
 
     private void rafraichirInfos() {
         labelOr.setText("Or disponible : " + gameMap.getStockOr());
-        labelCout.setText("Coût actuel : " + gameMap.getCoutInvocationActuel());
+        int actuel = gameMap.getNombrePersonnages();
+        int max    = gameMap.getCapacitePersonnages();
+        labelCout.setText("Coût : " + gameMap.getCoutInvocationActuel()
+            + " or  |  Personnages : " + actuel + " / " + max);
     }
 
     private void rafraichirTexteBouton(JButton boutonInvocation) {
-        boutonInvocation.setText("Invoquer (" + gameMap.getCoutInvocationActuel() + " or)");
+        if (gameMap.capacitePersonnagesPleine()) {
+            boutonInvocation.setText("Capacité pleine (" + gameMap.getNombrePersonnages() + "/" + gameMap.getCapacitePersonnages() + ")");
+            boutonInvocation.setEnabled(false);
+        } else {
+            boutonInvocation.setText("Invoquer (" + gameMap.getCoutInvocationActuel() + " or)  "
+                + gameMap.getNombrePersonnages() + "/" + gameMap.getCapacitePersonnages());
+            boutonInvocation.setEnabled(true);
+        }
     }
 
     private void rafraichirListe() {

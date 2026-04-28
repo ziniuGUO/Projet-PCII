@@ -2,6 +2,7 @@ package model;
 
 import java.awt.Point;
 import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
@@ -26,26 +27,26 @@ public class Map {
     public static final String TYPE_STATUE_DRAGON  = "STATUE_DRAGON";
     public static final String TYPE_TOUR_DEFENSE   = "TOUR_DEFENSE";
 
-    public static final int[] COUT_MAISON         = {2000, 0, 0};
-    public static final int[] COUT_ENTREPOT_BOIS  = {2000, 0, 0};
-    public static final int[] COUT_ENTREPOT_FER   = {2000, 0, 0};
-    public static final int[] COUT_ENTREPOT_OR    = {2000, 0, 0};
-    public static final int[] COUT_ENTREPOT_NOURR = {2000, 0, 0};
-    public static final int[] COUT_TOUR_DEFENSE   = {1500, 500, 0};
-    public static final int[] COUT_STATUE_DRAGON  = {25000, 0, 0};
+    public static final int[] COUT_MAISON         = {2000, 0,   0};
+    public static final int[] COUT_ENTREPOT_BOIS  = {3000, 300, 0};
+    public static final int[] COUT_ENTREPOT_FER   = {1500, 800, 0};
+    public static final int[] COUT_ENTREPOT_OR    = {1000, 0,   600};
+    public static final int[] COUT_ENTREPOT_NOURR = {1500, 0,   0};
+    public static final int[] COUT_TOUR_DEFENSE   = {2000, 500, 0};
+    public static final int[] COUT_STATUE_DRAGON  = {25000, 0,  0};
 
     private final HashMap<String, String>  typesBatiments      = new HashMap<>();
     private final HashMap<String, Boolean> batimentsConstruits = new HashMap<>();
     private final HashMap<String, Batiment> batimentsObjets    = new HashMap<>();
 
     public JourNuit jourNuit;
-    public List<Voleur> voleurs = new ArrayList<>();
+    public List<Voleur> voleurs = new CopyOnWriteArrayList<>();
 
     private final int width;
     private final int height;
     private final int[][] terrain;
 
-    private final List<Personnage> personnages = new ArrayList<>();
+    private final List<Personnage> personnages = new CopyOnWriteArrayList<>();
     private final Random random = new Random();
 
     private final AutelInvocation autelInvocation;
@@ -56,6 +57,7 @@ public class Map {
     private static final int HDV_X = 10;
     private static final int HDV_Y = 7;
 
+    private long dernierSpawnVoleur = 0L;
     private Inventaire inventaire;
 
     private int stockOr = 500;
@@ -70,8 +72,6 @@ public class Map {
     private int nombreInvocations = 0;
     private int compteurSansCinqEtoiles = 0;
 
-    private long dernierSpawnVoleur = 0L;
-    private static final long INTERVALLE_SPAWN_VOLEUR = 15000L;
 
     public interface OnRessourceGagneeListener {
         void onRessourceGagnee(Ressource.Type type, int quantite);
@@ -117,13 +117,35 @@ public class Map {
         return autelInvocation;
     }
 
+    // Gardé pour compatibilité interne mais ne pas utiliser depuis la vue
     public HotelDeVille getHotelDeVille() {
         return hotelDeVille;
     }
 
+    // Gardé pour compatibilité interne
     public Inventaire getInventaire() {
         return inventaire;
     }
+
+    /* --- Méthodes métier HotelDeVille (pour la vue/contrôleur) --- */
+    public int getNiveauHotelDeVille()    { return hotelDeVille.getNiveau(); }
+    public int getNiveauMaxHotelDeVille() { return HotelDeVille.NIVEAU_MAX; }
+    public boolean hotelDeVilleAuNiveauMax() { return hotelDeVille.estAuNiveauMax(); }
+    public int getCoutAmeliorationHotelDeVille() { return hotelDeVille.getCoutAmelioration(); }
+    public int getCapaciteBaseHotelDeVille() { return hotelDeVille.getCapaciteBase(); }
+
+    /* --- Méthodes métier Inventaire (pour la vue/contrôleur) --- */
+    public int getBoisInventaire()       { return inventaire != null ? inventaire.getBois()       : 0; }
+    public int getFerInventaire()        { return inventaire != null ? inventaire.getFer()        : 0; }
+    public int getOrInventaire()         { return inventaire != null ? inventaire.getOr()         : 0; }
+    public int getNourritureInventaire() { return inventaire != null ? inventaire.getNourriture() : 0; }
+    public int getMaxBoisInventaire()       { return inventaire != null ? inventaire.getMaxBois()       : 0; }
+    public int getMaxFerInventaire()        { return inventaire != null ? inventaire.getMaxFer()        : 0; }
+    public int getMaxOrInventaire()         { return inventaire != null ? inventaire.getMaxOr()         : 0; }
+    public int getMaxNourritureInventaire() { return inventaire != null ? inventaire.getMaxNourriture() : 0; }
+
+    /* --- Méthodes métier Personnages --- */
+    public int getNombrePersonnages()    { return personnages.size(); }
 
     public boolean estAutelInvocation(int x, int y) {
         return x == autelX && y == autelY;
@@ -284,6 +306,85 @@ public class Map {
         return TYPE_STATUE_DRAGON.equals(getTypeBatiment(x, y));
     }
 
+    // ── Sauvegarde / Chargement ───────────────────────────────────────────────
+
+    public SauvegardeJeu creerSauvegarde() {
+        SauvegardeJeu save = new SauvegardeJeu();
+
+        // Inventaire
+        save.bois        = inventaire != null ? inventaire.getBois()       : 0;
+        save.fer         = inventaire != null ? inventaire.getFer()        : 0;
+        save.or          = inventaire != null ? inventaire.getOr()         : 0;
+        save.nourriture  = inventaire != null ? inventaire.getNourriture() : 0;
+
+        // HdV
+        save.niveauHdV = hotelDeVille.getNiveau();
+
+        // Bâtiments
+        save.batimentsConstruits = new java.util.HashMap<>(batimentsConstruits);
+
+        // Personnages (on sauvegarde seulement ceux qui existent, sans leur état de mission)
+        save.personnages = new java.util.ArrayList<>();
+        for (Personnage p : personnages) {
+            SauvegardeJeu.DonneesPersonnage dp = new SauvegardeJeu.DonneesPersonnage();
+            dp.nom          = p.getNom();
+            dp.rareteEtoiles = p.getRareteEtoiles();
+            dp.hpActuel     = p.getHpActuel();
+            dp.x            = hotelDeVille.getX();
+            dp.y            = hotelDeVille.getY();
+            save.personnages.add(dp);
+        }
+
+        // Compteurs
+        save.nombreInvocations      = nombreInvocations;
+        save.compteurSansCinqEtoiles = compteurSansCinqEtoiles;
+        save.stockBoisForet         = stockBoisForet;
+
+        return save;
+    }
+
+    public void chargerDepuis(SauvegardeJeu save) {
+        if (save == null) return;
+
+        // Restaurer bâtiments construits
+        for (java.util.Map.Entry<String, Boolean> entry : save.batimentsConstruits.entrySet()) {
+            if (Boolean.TRUE.equals(entry.getValue()) && batimentsConstruits.containsKey(entry.getKey())) {
+                batimentsConstruits.put(entry.getKey(), true);
+                Batiment b = batimentsObjets.get(entry.getKey());
+                if (b != null) b.construire();
+            }
+        }
+
+        // Restaurer niveau HdV
+        while (hotelDeVille.getNiveau() < save.niveauHdV) {
+            hotelDeVille.monterNiveau();
+        }
+
+        // Restaurer inventaire
+        if (inventaire != null) {
+            recalculerCapacites();
+            inventaire.ajouterRessource(Ressource.Type.BOIS,       save.bois);
+            inventaire.ajouterRessource(Ressource.Type.FER,        save.fer);
+            inventaire.ajouterRessource(Ressource.Type.OR,         save.or);
+            inventaire.ajouterRessource(Ressource.Type.NOURRITURE, save.nourriture);
+        }
+
+        // Restaurer personnages
+        personnages.clear();
+        if (save.personnages != null) {
+            for (SauvegardeJeu.DonneesPersonnage dp : save.personnages) {
+                Personnage p = new Personnage(dp.nom, dp.rareteEtoiles, dp.x, dp.y);
+                p.setHpActuel(dp.hpActuel);
+                personnages.add(p);
+            }
+        }
+
+        // Compteurs
+        nombreInvocations       = save.nombreInvocations;
+        compteurSansCinqEtoiles  = save.compteurSansCinqEtoiles;
+        stockBoisForet           = save.stockBoisForet;
+    }
+
     public String ameliorerHotelDeVille() {
         if (hotelDeVille.estAuNiveauMax())
             return "L'Hôtel de Ville est déjà au niveau maximum !";
@@ -349,12 +450,33 @@ public class Map {
     }
 
     public int getCoutInvocationActuel() {
-        long cout = 10L << nombreInvocations;
+        long cout = Math.min(50 + (long)(nombreInvocations * 55), 380);
         if (cout > Integer.MAX_VALUE) return Integer.MAX_VALUE;
         return (int) cout;
     }
 
+    /** 5 places de base (HdV) + 5 par maison construite. */
+    public int getCapacitePersonnages() {
+        int capacite = 5;
+        for (java.util.Map.Entry<String, String> entry : typesBatiments.entrySet()) {
+            if (TYPE_MAISON.equals(entry.getValue())) {
+                Boolean construit = batimentsConstruits.get(entry.getKey());
+                if (Boolean.TRUE.equals(construit)) capacite += 5;
+            }
+        }
+        return capacite;
+    }
+
     public boolean peutInvoquer() {
+        return getStockOr() >= getCoutInvocationActuel()
+            && personnages.size() < getCapacitePersonnages();
+    }
+
+    public boolean capacitePersonnagesPleine() {
+        return personnages.size() >= getCapacitePersonnages();
+    }
+
+    public boolean orSuffisantPourInvoquer() {
         return getStockOr() >= getCoutInvocationActuel();
     }
 
@@ -391,16 +513,16 @@ public class Map {
     }
 
     private int tirerRarete() {
-        if (compteurSansCinqEtoiles >= 9) {
+        if (compteurSansCinqEtoiles >= 10) {
             compteurSansCinqEtoiles = 0;
             return 5;
         }
 
         double r = random.nextDouble();
         int etoiles;
-        if (r < 0.40) etoiles = 1;
-        else if (r < 0.70) etoiles = 2;
-        else if (r < 0.85) etoiles = 3;
+        if (r < 0.35) etoiles = 1;
+        else if (r < 0.65) etoiles = 2;
+        else if (r < 0.83) etoiles = 3;
         else if (r < 0.95) etoiles = 4;
         else etoiles = 5;
 
@@ -421,10 +543,8 @@ public class Map {
             }
         }
 
-        if (!p.isDeploye()) {
-            p.setPosition(hotelDeVille.getX(), hotelDeVille.getY());
-            p.setDeploye(true);
-        }
+        p.setPosition(hotelDeVille.getX(), hotelDeVille.getY());
+        p.setDeploye(true);
 
         p.interrompreAction();
         p.setPretARecuperer(false);
@@ -491,10 +611,10 @@ public class Map {
     private int calculerGainRessource(Personnage p, Ressource.Type type) {
         int e = p.getRareteEtoiles();
         return switch (type) {
-            case OR -> 10 * e;
-            case FER -> 20 * e;
-            case NOURRITURE -> 30 * e;
-            case BOIS -> 40 * e;
+            case OR -> 15 * e;
+            case FER -> 30 * e;
+            case NOURRITURE -> 40 * e;
+            case BOIS -> 50 * e;
         };
     }
 
@@ -685,7 +805,7 @@ public class Map {
         Thread t = new Thread(() -> {
             while (true) {
                 mettreAJourPersonnages();
-                mettreAJourVoleurs();
+                nettoyerVoleursInactifs();
                 tenterSpawnVoleur();
 
                 try {
@@ -776,48 +896,33 @@ public class Map {
     }
 
     /* fonction en lien avec les voleurs */
-    private void mettreAJourVoleurs() {
-        List<Voleur> aSupprimer = new ArrayList<>();
-
-        for (Voleur v : voleurs) {
+    private void nettoyerVoleursInactifs() {
+        voleurs.removeIf(v -> {
             if (!v.isActif()) {
-                if (v.getCible() != null) {
-                    v.getCible().setEnAttaque(false);
-                }
-                aSupprimer.add(v);
-                continue;
+                if (v.getCible() != null) v.getCible().setEnAttaque(false);
+                return true;
             }
-
-            if (!v.estArrive()) {
-                v.avancerVersCible();
-            } else {
-                // Si le voleur vient d'arriver, démarrer le pillage (il reste visible pendant quelques ticks)
-                if (!v.isEnPillage()) {
-                    v.commencerPillage();
-                } else {
-                    // Décrémenter le compteur de pillage ; quand terminé, résoudre le vol/defense
-                    boolean fini = v.mettreAJourPillage();
-                    if (fini) {
-                        resoudreVolOuDefense(v);
-                        aSupprimer.add(v);
-                    }
-                }
-            }
-        }
-
-        voleurs.removeAll(aSupprimer);
+            return false;
+        });
     }
+
+    private boolean etaitNuit = false;
 
     private void tenterSpawnVoleur() {
         long now = System.currentTimeMillis();
-        if (now - dernierSpawnVoleur < INTERVALLE_SPAWN_VOLEUR) return;
+        boolean isNuit = !jourNuit.getIsDay();
+
+        long intervalle = isNuit ? 20000L : 60000L;
+        if (now - dernierSpawnVoleur < intervalle) return;
 
         List<Batiment> cibles = getBatimentsDefenseDisponibles();
         if (cibles.isEmpty()) return;
 
-        // Appliquer la probabilité d'apparition selon jour/nuit : 20% jour, 80% nuit
-        double probabilite = jourNuit.getIsDay() ? 0.20 : 0.80;
-        if (random.nextDouble() > probabilite) return;
+        double probabilite = isNuit ? 0.55 : 0.10;
+        if (random.nextDouble() > probabilite) {
+            dernierSpawnVoleur = now;
+            return;
+        }
 
         dernierSpawnVoleur = now;
         spawnVoleur();
@@ -829,25 +934,26 @@ public class Map {
 
         Batiment cible = cibles.get(random.nextInt(cibles.size()));
 
-        // 如果目标是 Hotel de Ville，可以直接从边缘刷一个小偷过去
         int side = random.nextInt(4);
         int x, y;
-
         switch (side) {
-            case 0 -> { x = 0; y = random.nextInt(height); }
-            case 1 -> { x = width - 1; y = random.nextInt(height); }
-            case 2 -> { x = random.nextInt(width); y = 0; }
-            default -> { x = random.nextInt(width); y = height - 1; }
+            case 0 -> { x = 0;            y = random.nextInt(height); }
+            case 1 -> { x = width - 1;    y = random.nextInt(height); }
+            case 2 -> { x = random.nextInt(width); y = 0;             }
+            default -> { x = random.nextInt(width); y = height - 1;   }
         }
 
         Voleur v = new Voleur(x, y);
         v.setCible(cible);
+        v.setOnPillageTermine(() -> javax.swing.SwingUtilities.invokeLater(() -> resoudreVolOuDefense(v)));
         cible.setEnAttaque(true);
         voleurs.add(v);
+        v.start();
 
         notificationMessage = "Alerte ! Un voleur va attaquer " + cible.getNom()
                 + " en (" + cible.getX() + "," + cible.getY() + ")";
     }
+
     private void resoudreVolOuDefense(Voleur v) {
         Batiment cible = v.getCible();
         if (cible == null) return;
@@ -928,8 +1034,8 @@ public class Map {
         int multiplicateur = switch (type) {
             case OR -> 1;
             case FER -> 2;
-            case NOURRITURE -> 3;
-            case BOIS -> 4;
+            case NOURRITURE -> 2;
+            case BOIS -> 2;
         };
 
         int perte = atkEffectif * multiplicateur;

@@ -130,10 +130,10 @@ public class ReactionClic implements MouseMotionListener, MouseListener {
                     "Conditions non remplies", JOptionPane.WARNING_MESSAGE);
                 return;
             }
-            if (gameMap.getHotelDeVille().getNiveau() < model.HotelDeVille.NIVEAU_MAX) {
+            if (gameMap.getNiveauHotelDeVille() < model.HotelDeVille.NIVEAU_MAX) {
                 JOptionPane.showMessageDialog(mapPanel,
                     "L'Hôtel de Ville doit être au niveau " + model.HotelDeVille.NIVEAU_MAX
-                    + " (actuel : " + gameMap.getHotelDeVille().getNiveau() + ") !",
+                    + " (actuel : " + gameMap.getNiveauHotelDeVille() + ") !",
                     "Conditions non remplies", JOptionPane.WARNING_MESSAGE);
                 return;
             }
@@ -141,8 +141,6 @@ public class ReactionClic implements MouseMotionListener, MouseListener {
 
         int[] cout = gameMap.getCoutConstruction(tileX, tileY);
         if (cout == null) return;
-
-        model.Inventaire inv = gameMap.getInventaire();
 
         // Nom lisible du bâtiment
         String nom = switch (type) {
@@ -156,9 +154,9 @@ public class ReactionClic implements MouseMotionListener, MouseListener {
         };
 
         // Vérifier si le joueur a assez
-        boolean assezBois = inv == null || inv.getBois() >= cout[0];
-        boolean assezFer  = inv == null || inv.getFer()  >= cout[1];
-        boolean assezOr   = inv == null || inv.getOr()   >= cout[2];
+        boolean assezBois = gameMap.getBoisInventaire() >= cout[0];
+        boolean assezFer  = gameMap.getFerInventaire()  >= cout[1];
+        boolean assezOr   = gameMap.getOrInventaire()   >= cout[2];
         boolean peutConstruire = assezBois && assezFer && assezOr;
 
         JPanel panel = new JPanel(new GridLayout(0, 1, 4, 4));
@@ -243,23 +241,23 @@ public class ReactionClic implements MouseMotionListener, MouseListener {
     }
 
     private void ouvrirDialogueHotelDeVille() {
-        model.HotelDeVille hdv = gameMap.getHotelDeVille();
-        int niveau = hdv.getNiveau();
-        int cap = hdv.getCapaciteBase();
+        int niveau = gameMap.getNiveauHotelDeVille();
+        int niveauMax = gameMap.getNiveauMaxHotelDeVille();
+        int cap = gameMap.getCapaciteBaseHotelDeVille();
         String capStr = (cap < 0) ? "Illimitée" : (cap + " par ressource");
 
-        if (hdv.estAuNiveauMax()) {
+        if (gameMap.hotelDeVilleAuNiveauMax()) {
             JOptionPane.showMessageDialog(mapPanel,
-                "Hôtel de Ville — Niveau MAX (" + niveau + "/" + model.HotelDeVille.NIVEAU_MAX + ")\n"
+                "Hôtel de Ville — Niveau MAX (" + niveau + "/" + niveauMax + ")\n"
                 + "Capacité de stockage : " + capStr,
                 "Hôtel de Ville",
                 JOptionPane.INFORMATION_MESSAGE);
             return;
         }
 
-        int coutFer = hdv.getCoutAmelioration();
+        int coutFer = gameMap.getCoutAmeliorationHotelDeVille();
         int choix = JOptionPane.showConfirmDialog(mapPanel,
-            "Hôtel de Ville — Niveau " + niveau + "/" + model.HotelDeVille.NIVEAU_MAX + "\n"
+            "Hôtel de Ville — Niveau " + niveau + "/" + niveauMax + "\n"
             + "Capacité actuelle : " + capStr + "\n\n"
             + "Améliorer au niveau " + (niveau + 1) + " ?\n"
             + "Coût : " + coutFer + " fer",

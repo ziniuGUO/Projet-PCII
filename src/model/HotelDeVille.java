@@ -16,7 +16,7 @@ public class HotelDeVille extends Batiment {
     private static final int[] BONUS_ENTREPOT = {500, 1000, 2000, 4000, -1};
 
     // Coût en fer pour passer au niveau suivant
-    private static final int[] COUTS_AMELIORATION = {800, 1800, 3500, 6000};
+    private static final int[] COUTS_AMELIORATION = {1500, 3000, 5000, 8000};
 
     private int niveau = 1;
 

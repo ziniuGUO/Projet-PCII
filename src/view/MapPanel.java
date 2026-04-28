@@ -90,7 +90,7 @@ public class MapPanel extends JPanel {
 
     public MapPanel(Map gameMap) {
         this.gameMap = gameMap;
-        int panelW = BORDER_PAD * 2 + gameMap.getWidth()  * TILE_SIZE + 150;
+        int panelW = BORDER_PAD * 2 + gameMap.getWidth()  * TILE_SIZE;
         int panelH = BORDER_PAD * 2 + gameMap.getHeight() * TILE_SIZE + TITLE_H + 30;
         setPreferredSize(new Dimension(panelW, panelH));
         setBackground(COL_BG);
@@ -163,7 +163,6 @@ public class MapPanel extends JPanel {
         drawSelectedPersonnage(g2);
         drawSelection(g2);
         drawTooltip(g2);
-        drawLegend(g2);
         drawNotification(g2);
     }
     private void drawVoleurs(Graphics2D g2) {
@@ -735,83 +734,4 @@ public class MapPanel extends JPanel {
         g2.drawString("Clique sur le personnage pour recuperer.", bx + 12, by + 53);
     }
 
-    private void drawLegend(Graphics2D g2) {
-        int lx = BORDER_PAD + gameMap.getWidth() * TILE_SIZE + 16;
-        int ly = BORDER_PAD + TITLE_H;
-
-        String[] terrainLabels = {"Herbe", "Batiment", "Foret / Bois", "Mine / Fer", "Gisement / Or", "Cueillette / Nourr."};
-        Color[]  terrainColors = {COL_HERBE_JOUR, COL_BATIMENT, COL_BOIS, COL_FER, COL_OR, COL_NOURRITURE};
-        if (!gameMap.getIsDay()) terrainColors[0] = COL_HERBE_NUIT;
-
-        int terrainBlockH = terrainLabels.length * 22 + 30;
-        g2.setColor(new Color(0, 0, 0, 110));
-        g2.fillRoundRect(lx - 6, ly - 6, 135, terrainBlockH, 8, 8);
-
-        g2.setFont(FONT_INV_TITLE);
-        g2.setColor(new Color(255, 215, 60));
-        g2.drawString("TERRAINS", lx, ly + 13);
-
-        g2.setFont(FONT_LEGEND);
-        for (int i = 0; i < terrainLabels.length; i++) {
-            int iy = ly + 28 + i * 22;
-            g2.setColor(terrainColors[i]);
-            g2.fillRect(lx, iy, 14, 14);
-            g2.setColor(new Color(0, 0, 0, 100));
-            g2.drawRect(lx, iy, 14, 14);
-            g2.setColor(new Color(220, 205, 170));
-            g2.drawString(terrainLabels[i], lx + 18, iy + 11);
-        }
-
-        // bloc inventaire
-        int invY = ly + terrainBlockH + 14;
-        String[] resLabels = {"Bois", "Fer", "Or", "Nourriture"};
-        Color[]  resColors = {COL_BOIS, COL_FER, COL_OR, COL_NOURRITURE};
-        int[]    resValues = {stockBois, stockFer, stockOr, stockNourriture};
-
-        int invBlockH = resLabels.length * 26 + 34;
-        g2.setColor(new Color(0, 0, 0, 130));
-        g2.fillRoundRect(lx - 6, invY - 6, 135, invBlockH, 8, 8);
-
-        g2.setFont(FONT_INV_TITLE);
-        g2.setColor(new Color(255, 215, 60));
-        g2.drawString("RESSOURCES", lx, invY + 13);
-        g2.setColor(new Color(255, 215, 60, 70));
-        g2.drawLine(lx, invY + 18, lx + 122, invY + 18);
-
-        // max par ressource depuis l'inventaire (via gameMap)
-        int[] resMax = {
-            gameMap.getInventaire().getMaxBois(),
-            gameMap.getInventaire().getMaxFer(),
-            gameMap.getInventaire().getMaxOr(),
-            gameMap.getInventaire().getMaxNourriture()
-        };
-
-        for (int i = 0; i < resLabels.length; i++) {
-            int iy = invY + 30 + i * 26;
-            g2.setColor(resColors[i]);
-            g2.fillRect(lx, iy, 14, 14);
-            g2.setColor(new Color(0, 0, 0, 100));
-            g2.drawRect(lx, iy, 14, 14);
-
-            g2.setFont(FONT_LEGEND);
-            g2.setColor(new Color(220, 205, 170));
-            g2.drawString(resLabels[i], lx + 18, iy + 8);
-
-            // afficher val / max sous le nom
-            String maxStr = (resMax[i] < 0) ? "∞" : String.valueOf(resMax[i]);
-            String valStr = resValues[i] + "/" + maxStr;
-            g2.setFont(new Font("SansSerif", Font.BOLD, 10));
-            FontMetrics fm = g2.getFontMetrics();
-            // barre de remplissage
-            int barW = 110;
-            float ratio = (resMax[i] <= 0) ? 0f : Math.min(1f, (float) resValues[i] / resMax[i]);
-            g2.setColor(new Color(0, 0, 0, 80));
-            g2.fillRect(lx + 18, iy + 13, barW, 6);
-            g2.setColor(resColors[i].darker());
-            g2.fillRect(lx + 18, iy + 13, (int)(barW * ratio), 6);
-            // texte valeur
-            g2.setColor(resValues[i] > 0 ? new Color(255, 240, 160) : new Color(130, 120, 100));
-            g2.drawString(valStr, lx + 18 + barW - fm.stringWidth(valStr), iy + 11);
-        }
-    }
 }

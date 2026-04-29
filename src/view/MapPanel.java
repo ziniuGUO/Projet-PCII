@@ -342,6 +342,49 @@ public class MapPanel extends JPanel {
         int tx = lx - 6 + (boxW - tw) / 2;
         g2.setColor(couleurTexte);
         g2.drawString(texte, tx, by + fm.getAscent() + 5);
+
+        // ── Timer de partie juste en dessous ──────────────────────────────────
+        long msPartie    = gameMap.getTempsRestantMs();
+        long totalPartie = gameMap.getDureeTotaleMs();
+        long h  = msPartie / 3600000;
+        long mn = (msPartie % 3600000) / 60000;
+        long sc = (msPartie % 60000) / 1000;
+        String chronoPartie = String.format("%02d:%02d:%02d", h, mn, sc);
+
+        float ratio = totalPartie <= 0 ? 0f : Math.min(1f, (float) msPartie / totalPartie);
+        Color couleurTimer;
+        if (ratio > 0.5f)       couleurTimer = new Color(60, 200, 60, 220);
+        else if (ratio > 0.25f) couleurTimer = new Color(220, 180, 0, 220);
+        else                    couleurTimer = new Color(220, 50, 50, 220);
+
+        int timerBoxH = 30;
+        int timerBy   = by + boxH + 6;
+
+        // Fond
+        g2.setColor(new Color(0, 0, 0, 180));
+        g2.fillRoundRect(lx - 6, timerBy, boxW, timerBoxH, 10, 10);
+
+        // Bordure colorée selon urgence
+        g2.setColor(couleurTimer);
+        g2.setStroke(new BasicStroke(1.5f));
+        g2.drawRoundRect(lx - 6, timerBy, boxW, timerBoxH, 10, 10);
+        g2.setStroke(new BasicStroke(1f));
+
+        // Texte chrono centré
+        g2.setFont(new Font("SansSerif", Font.BOLD, 14));
+        FontMetrics fmT = g2.getFontMetrics();
+        int twT = fmT.stringWidth(chronoPartie);
+        int txT = lx - 6 + (boxW - twT) / 2;
+        g2.setColor(couleurTimer);
+        g2.drawString(chronoPartie, txT, timerBy + fmT.getAscent() + 4);
+
+        // Barre de progression en bas du bloc
+        int barX = lx - 6 + 6;
+        int barW = boxW - 12;
+        g2.setColor(new Color(0, 0, 0, 80));
+        g2.fillRect(barX, timerBy + timerBoxH - 5, barW, 3);
+        g2.setColor(couleurTimer);
+        g2.fillRect(barX, timerBy + timerBoxH - 5, (int)(barW * ratio), 3);
     }
 
     private void drawTitle(Graphics2D g2) {

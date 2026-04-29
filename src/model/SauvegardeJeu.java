@@ -1,7 +1,6 @@
 package model;
 
 import java.io.*;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -12,6 +11,11 @@ public class SauvegardeJeu implements Serializable {
 
     private static final long serialVersionUID = 1L;
     private static final String FICHIER = "sauvegarde.dat";
+
+    // ── État de la partie ─────────────────────────────────────────────────────
+    public boolean partieEnCours = true;
+    public long tempsRestantMs = 3 * 60 * 60 * 1000L;
+    public long dureeTotaleMs  = 3 * 60 * 60 * 1000L;
 
     // Inventaire
     public int bois;

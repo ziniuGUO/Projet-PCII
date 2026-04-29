@@ -25,13 +25,173 @@ public class Main {
         });
     }
 
+    private static void afficherEcranGameOver(model.Map.RaisonGameOver raison) {
+        frame.getContentPane().removeAll();
+        frame.setLayout(new BorderLayout());
+
+        JPanel panel = new JPanel(new BorderLayout(0, 20));
+        panel.setBackground(new Color(10, 5, 5));
+        panel.setBorder(BorderFactory.createLineBorder(new Color(180, 30, 30), 4));
+
+        String titre, sousTitre;
+        if (raison == model.Map.RaisonGameOver.FAMINE) {
+            titre     = "💀  DÉFAITE — FAMINE  💀";
+            sousTitre = "<html><center>Vos villageois sont morts de faim.<br>Le village s'est effondré dans le silence.</center></html>";
+        } else {
+            titre     = "🔥  DÉFAITE — LE DRAGON  🔥";
+            sousTitre = "<html><center>Le dragon a brûlé votre village.<br>La Grande Statue n'a jamais été érigée.</center></html>";
+        }
+
+        JLabel lblTitre = new JLabel(titre, SwingConstants.CENTER);
+        lblTitre.setFont(new Font("Serif", Font.BOLD, 30));
+        lblTitre.setForeground(new Color(220, 60, 60));
+        lblTitre.setBorder(BorderFactory.createEmptyBorder(30, 20, 0, 20));
+
+        JLabel lblSous = new JLabel(sousTitre, SwingConstants.CENTER);
+        lblSous.setFont(new Font("Serif", Font.ITALIC, 15));
+        lblSous.setForeground(new Color(200, 150, 150));
+        lblSous.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 20));
+
+        JButton btnRejouer = new JButton("⚔  Rejouer (3h)");
+        btnRejouer.setFont(new Font("SansSerif", Font.BOLD, 16));
+        btnRejouer.setBackground(new Color(120, 30, 30));
+        btnRejouer.setForeground(Color.WHITE);
+        btnRejouer.setFocusPainted(false);
+        btnRejouer.setBorder(BorderFactory.createEmptyBorder(10, 30, 10, 30));
+        btnRejouer.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnRejouer.addActionListener(e -> demarrerPartie(null, 3 * 60 * 60 * 1000L));
+
+        JButton btnMenu = new JButton("🏠  Menu principal");
+        btnMenu.setFont(new Font("SansSerif", Font.BOLD, 14));
+        btnMenu.setBackground(new Color(40, 30, 15));
+        btnMenu.setForeground(new Color(200, 170, 80));
+        btnMenu.setFocusPainted(false);
+        btnMenu.setBorder(BorderFactory.createEmptyBorder(8, 20, 8, 20));
+        btnMenu.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnMenu.addActionListener(e -> afficherEcranAccueil());
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
+        btnPanel.setBackground(new Color(10, 5, 5));
+        btnPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 30, 0));
+        btnPanel.add(btnRejouer);
+        btnPanel.add(btnMenu);
+
+        JPanel centre = new JPanel(new GridBagLayout());
+        centre.setBackground(new Color(10, 5, 5));
+        centre.add(lblSous);
+
+        panel.add(lblTitre, BorderLayout.NORTH);
+        panel.add(centre,   BorderLayout.CENTER);
+        panel.add(btnPanel, BorderLayout.SOUTH);
+
+        frame.add(panel, BorderLayout.CENTER);
+        frame.revalidate();
+        frame.repaint();
+    }
+
+    private static void afficherEcranVictoireAvecDifficulte(long dureeActuelle) {
+        // Calculer la prochaine difficulté
+        long prochaineDuree;
+        if      (dureeActuelle >= 3 * 60 * 60 * 1000L)        prochaineDuree = (long)(2.5 * 60 * 60 * 1000L);
+        else if (dureeActuelle >= (long)(2.5 * 60 * 60 * 1000L)) prochaineDuree = 2 * 60 * 60 * 1000L;
+        else if (dureeActuelle >= 2 * 60 * 60 * 1000L)        prochaineDuree = (long)(1.5 * 60 * 60 * 1000L);
+        else                                                   prochaineDuree = (long)(1.5 * 60 * 60 * 1000L); // déjà au max
+
+        boolean estNiveauMax = dureeActuelle <= (long)(1.5 * 60 * 60 * 1000L);
+
+        frame.getContentPane().removeAll();
+        frame.setLayout(new BorderLayout());
+
+        JPanel panel = new JPanel(new BorderLayout(0, 20));
+        panel.setBackground(new Color(15, 10, 5));
+        panel.setBorder(BorderFactory.createLineBorder(new Color(220, 130, 0), 4));
+
+        JLabel lblTitre = new JLabel("🐉  VICTOIRE !  🐉", SwingConstants.CENTER);
+        lblTitre.setFont(new Font("Serif", Font.BOLD, 36));
+        lblTitre.setForeground(new Color(255, 200, 30));
+        lblTitre.setBorder(BorderFactory.createEmptyBorder(30, 20, 0, 20));
+
+        JLabel lblSous = new JLabel(
+            "<html><center>La Grande Statue du Dragon s'élève sur votre cité !<br>Votre règne est légendaire !</center></html>",
+            SwingConstants.CENTER);
+        lblSous.setFont(new Font("Serif", Font.ITALIC, 15));
+        lblSous.setForeground(new Color(210, 180, 100));
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 16, 0));
+        btnPanel.setBackground(new Color(15, 10, 5));
+        btnPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 30, 0));
+
+        // Bouton "Même difficulté"
+        String labelMeme = formaterDuree(dureeActuelle);
+        JButton btnMeme = new JButton("⚔  Rejouer (" + labelMeme + ")");
+        styliserBoutonVictoire(btnMeme, new Color(80, 60, 20));
+        btnMeme.addActionListener(e -> demarrerPartie(null, dureeActuelle));
+        btnPanel.add(btnMeme);
+
+        // Bouton "Plus difficile" (si pas au niveau max)
+        if (!estNiveauMax) {
+            String labelPlus = formaterDuree(prochaineDuree);
+            JButton btnPlus = new JButton("🔥  Plus difficile (" + labelPlus + ")");
+            styliserBoutonVictoire(btnPlus, new Color(140, 40, 0));
+            btnPlus.addActionListener(e -> demarrerPartie(null, prochaineDuree));
+            btnPanel.add(btnPlus);
+        } else {
+            JLabel lblMax = new JLabel("★ Niveau maximum atteint !", SwingConstants.CENTER);
+            lblMax.setFont(new Font("SansSerif", Font.BOLD, 13));
+            lblMax.setForeground(new Color(255, 180, 0));
+            btnPanel.add(lblMax);
+        }
+
+        // Bouton menu
+        JButton btnMenu = new JButton("🏠  Menu");
+        styliserBoutonVictoire(btnMenu, new Color(40, 30, 15));
+        btnMenu.setForeground(new Color(200, 170, 80));
+        btnMenu.addActionListener(e -> afficherEcranAccueil());
+        btnPanel.add(btnMenu);
+
+        JPanel centre = new JPanel(new GridBagLayout());
+        centre.setBackground(new Color(15, 10, 5));
+        centre.add(lblSous);
+
+        panel.add(lblTitre, BorderLayout.NORTH);
+        panel.add(centre,   BorderLayout.CENTER);
+        panel.add(btnPanel, BorderLayout.SOUTH);
+
+        frame.add(panel, BorderLayout.CENTER);
+        frame.revalidate();
+        frame.repaint();
+    }
+
+    private static String formaterDuree(long ms) {
+        long h = ms / 3600000;
+        long m = (ms % 3600000) / 60000;
+        if (m == 0) return h + "h";
+        return h + "h" + m + "m";
+    }
+
+    private static void styliserBoutonVictoire(JButton btn, Color bg) {
+        btn.setFont(new Font("SansSerif", Font.BOLD, 15));
+        btn.setBackground(bg);
+        btn.setForeground(Color.WHITE);
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createEmptyBorder(10, 22, 10, 22));
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+    }
+
     private static void afficherEcranAccueil() {
         frame.getContentPane().removeAll();
         frame.setLayout(new BorderLayout());
 
         EcranAccueil ecran = new EcranAccueil(new EcranAccueil.EcranAccueilListener() {
             @Override public void onNouvellePartie()                  { demarrerPartie(null); }
-            @Override public void onReprendrePartie(SauvegardeJeu s)  { demarrerPartie(s);    }
+            @Override public void onReprendrePartie(SauvegardeJeu s)  {
+                if (!s.partieEnCours) {
+                    // Victoire sauvegardée → afficher l'écran victoire avec choix difficulté
+                    afficherEcranVictoireAvecDifficulte(s.dureeTotaleMs);
+                } else {
+                    demarrerPartie(s);
+                }
+            }
             @Override public void onQuitter()                         { System.exit(0);        }
         });
 
@@ -43,6 +203,10 @@ public class Main {
     }
 
     private static void demarrerPartie(SauvegardeJeu save) {
+        demarrerPartie(save, 3 * 60 * 60 * 1000L);
+    }
+
+    private static void demarrerPartie(SauvegardeJeu save, long dureeTotaleMs) {
         frame.getContentPane().removeAll();
 
         Map gameMap = new Map(20, 15);
@@ -52,15 +216,32 @@ public class Main {
 
         gameMap.setInventaire(inventaire);
 
+        // Appliquer la durée (sauvegarde ou nouvelle partie)
         if (save != null) {
             gameMap.chargerDepuis(save);
+        } else {
+            gameMap.setDureeTotaleMs(dureeTotaleMs);
+            gameMap.setTempsRestantMs(dureeTotaleMs);
         }
 
         gameMap.setOnRessourceGagneeListener((type, quantite) ->
             inventaire.ajouterRessource(type, quantite)
         );
 
-        Runnable onVictoire = () -> SwingUtilities.invokeLater(Main::afficherEcranAccueil);
+        // ── Game over listener ────────────────────────────────────────────────
+        gameMap.setOnGameOverListener(raison -> afficherEcranGameOver(raison));
+
+        Runnable onVictoire = () -> SwingUtilities.invokeLater(() -> {
+            long dureeActuelle = gameMap.getDureeTotaleMs();
+            // Sauvegarder l'état victoire pour que "Reprendre" affiche le bon écran
+            gameMap.arreterTimer();
+            try {
+                SauvegardeJeu saveVictoire = gameMap.creerSauvegarde();
+                saveVictoire.partieEnCours = false;
+                SauvegardeJeu.sauvegarder(saveVictoire);
+            } catch (java.io.IOException ignored) {}
+            afficherEcranVictoireAvecDifficulte(dureeActuelle);
+        });
 
         ReactionClic reactionClic = new ReactionClic(gameMap, mapPanel,
             mapPanel.getTileSize(), mapPanel.getBorderPad(), mapPanel.getTitleHeight(), onVictoire);
@@ -92,6 +273,9 @@ public class Main {
         // Timer rafraichit aussi le panneau latéral
         Timer timerRafraichissement2 = new Timer(500, e -> panneauLateral.repaint());
         timerRafraichissement2.start();
+
+        // Démarrer le timer de partie
+        gameMap.demarrerTimer();
 
         JScrollPane scrollPane = new JScrollPane(mapPanel);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
@@ -146,7 +330,9 @@ public class Main {
         btnSave.setFont(new Font("SansSerif", Font.BOLD, 12));
         btnSave.addActionListener(e -> {
             try {
+                gameMap.arreterTimer();
                 SauvegardeJeu.sauvegarder(gameMap.creerSauvegarde());
+                gameMap.demarrerTimer();
                 cheatResult.setText("Partie sauvegardée !");
             } catch (IOException ex) {
                 cheatResult.setText("Erreur sauvegarde !");

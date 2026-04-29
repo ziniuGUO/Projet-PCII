@@ -60,8 +60,10 @@ public class PanneauLateral extends JPanel {
         int headerH  = 36; // titre + séparateur
         int panelH   = getHeight();
 
+        int yDebut = 10;
+
         // Colonne gauche : population + ressources
-        int y = 10;
+        int y = yDebut;
         y = dessinerBlocPopulation(g2, 0, halfW, y);
         int yApresRessources = y + 10;
         dessinerBlocRessources(g2, 0, halfW, yApresRessources);
@@ -72,8 +74,8 @@ public class PanneauLateral extends JPanel {
         int blocHRess    = nbLignesRess * ligneHRess + 34;
         int yLibreGauche = yApresRessources + blocHRess + 10;
 
-        // Capacité colonne droite (depuis y=10)
-        int maxDansColonneDroite = Math.max(0, (panelH - 10 - headerH) / ligneH);
+        // Capacité colonne droite (depuis yDebut)
+        int maxDansColonneDroite = Math.max(0, (panelH - yDebut - headerH) / ligneH);
         // Capacité zone sous ressources (colonne gauche basse)
         int maxSousRessources    = Math.max(0, (panelH - yLibreGauche - headerH) / ligneH);
 
@@ -88,12 +90,60 @@ public class PanneauLateral extends JPanel {
         List<Personnage> persosSousRess = persos.subList(nbDroite, nbDroite + nbSousRess);
 
         // Colonne droite
-        dessinerBlocPersonnages(g2, halfW, getWidth(), 10, persosDroite, total > 0 && nbDroite == 0);
+        dessinerBlocPersonnages(g2, halfW, getWidth(), yDebut, persosDroite, total > 0 && nbDroite == 0);
 
         // Sous ressources (colonne gauche) si overflow
         if (!persosSousRess.isEmpty()) {
             dessinerBlocPersonnages(g2, 0, halfW, yLibreGauche, persosSousRess, false);
         }
+    }
+
+    // ── Bloc timer ────────────────────────────────────────────────────────────
+
+    private void dessinerTimer(Graphics2D g2, int xStart, int xEnd, int y) {
+        int w     = xEnd - xStart;
+        int blocH = 62;
+
+        long ms      = gameMap.getTempsRestantMs();
+        long total   = gameMap.getDureeTotaleMs();
+        long heures  = ms / 3600000;
+        long minutes = (ms % 3600000) / 60000;
+        long secondes= (ms % 60000) / 1000;
+
+        float ratio = total <= 0 ? 0f : Math.min(1f, (float) ms / total);
+
+        // Couleur selon urgence
+        Color couleurTimer;
+        if (ratio > 0.5f)       couleurTimer = new Color(100, 220, 100);
+        else if (ratio > 0.25f) couleurTimer = new Color(220, 180, 0);
+        else                    couleurTimer = new Color(220, 60, 60);
+
+        // Fond
+        g2.setColor(new Color(0, 0, 0, 160));
+        g2.fillRoundRect(xStart + 6, y, w - 12, blocH, 10, 10);
+
+        // Titre
+        g2.setFont(new Font("Serif", Font.BOLD, 13));
+        g2.setColor(OR);
+        g2.drawString("TEMPS RESTANT", xStart + 14, y + 16);
+        g2.setColor(OR_DIM);
+        g2.drawLine(xStart + 14, y + 20, xEnd - 14, y + 20);
+
+        // Chrono
+        String chrono = String.format("%02d:%02d:%02d", heures, minutes, secondes);
+        g2.setFont(new Font("SansSerif", Font.BOLD, 22));
+        g2.setColor(couleurTimer);
+        FontMetrics fm = g2.getFontMetrics();
+        int tx = xStart + (w - fm.stringWidth(chrono)) / 2;
+        g2.drawString(chrono, tx, y + 46);
+
+        // Barre de progression
+        int barX = xStart + 14;
+        int barW = w - 28;
+        g2.setColor(new Color(0, 0, 0, 80));
+        g2.fillRect(barX, y + 50, barW, 6);
+        g2.setColor(couleurTimer);
+        g2.fillRect(barX, y + 50, (int)(barW * ratio), 6);
     }
 
     // ── Bloc personnages ──────────────────────────────────────────────────────
@@ -275,7 +325,8 @@ public class PanneauLateral extends JPanel {
         int panelH   = getHeight();
 
         // Mêmes seuils que paintComponent
-        int yApresPopBloc    = 66;
+        int yDebut           = 10;
+        int yApresPopBloc    = yDebut + 66;
         int yApresRessources = yApresPopBloc + 10;
         int blocHRess        = 4 * 28 + 34;
         int yLibreGauche     = yApresRessources + blocHRess + 10;
@@ -288,7 +339,7 @@ public class PanneauLateral extends JPanel {
 
         // Clic colonne droite
         if (mouseX >= halfW) {
-            int debutY = 38;
+            int debutY = yDebut + 28;
             for (int i = 0; i < nbDroite; i++) {
                 int yHaut = debutY + i * ligneH;
                 if (mouseY >= yHaut && mouseY <= yHaut + 46) return persos.get(i);

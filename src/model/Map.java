@@ -72,6 +72,22 @@ public class Map {
     private int nombreInvocations = 0;
     private int compteurSansCinqEtoiles = 0;
 
+    // ── Timer de partie ───────────────────────────────────────────────────────
+    private long tempsRestantMs = 3 * 60 * 60 * 1000L; // 3h par défaut
+    private long dureeTotaleMs  = 3 * 60 * 60 * 1000L;
+    private long dernierTickTimer = 0L;
+    private boolean timerActif = false;
+    private boolean gameOver = false;
+
+    public enum RaisonGameOver { FAMINE, TEMPS }
+    private RaisonGameOver raisonGameOver = null;
+
+    public interface OnGameOverListener {
+        void onGameOver(RaisonGameOver raison);
+    }
+    private OnGameOverListener gameOverListener;
+
+    public void setOnGameOverListener(OnGameOverListener l) { this.gameOverListener = l; }
 
     public interface OnRessourceGagneeListener {
         void onRessourceGagnee(Ressource.Type type, int quantite);
@@ -81,6 +97,50 @@ public class Map {
 
     public void setOnRessourceGagneeListener(OnRessourceGagneeListener l) {
         this.ressourceListener = l;
+    }
+
+    // ── Timer getters/setters ─────────────────────────────────────────────────
+    public long getTempsRestantMs()  { return tempsRestantMs; }
+    public long getDureeTotaleMs()   { return dureeTotaleMs; }
+    public boolean isGameOver()      { return gameOver; }
+    public RaisonGameOver getRaisonGameOver() { return raisonGameOver; }
+
+    public void setTempsRestantMs(long ms) { this.tempsRestantMs = ms; }
+    public void setDureeTotaleMs(long ms)  { this.dureeTotaleMs  = ms; }
+
+    public void demarrerTimer() {
+        this.dernierTickTimer = System.currentTimeMillis();
+        this.timerActif = true;
+    }
+
+    public void arreterTimer() { this.timerActif = false; }
+
+    private void mettreAJourTimer() {
+        if (!timerActif || gameOver) return;
+        long now = System.currentTimeMillis();
+        long delta = now - dernierTickTimer;
+        dernierTickTimer = now;
+        tempsRestantMs = Math.max(0, tempsRestantMs - delta);
+        if (tempsRestantMs <= 0) {
+            declencherGameOver(RaisonGameOver.TEMPS);
+        }
+    }
+
+    private void verifierFamine() {
+        if (gameOver || inventaire == null) return;
+        if (inventaire.getNourriture() <= 0) {
+            declencherGameOver(RaisonGameOver.FAMINE);
+        }
+    }
+
+    private void declencherGameOver(RaisonGameOver raison) {
+        if (gameOver) return;
+        gameOver = true;
+        raisonGameOver = raison;
+        timerActif = false;
+        if (gameOverListener != null) {
+            javax.swing.SwingUtilities.invokeLater(() -> gameOverListener.onGameOver(raison));
+        }
     }
 
     /* constructeur */
@@ -340,6 +400,11 @@ public class Map {
         save.compteurSansCinqEtoiles = compteurSansCinqEtoiles;
         save.stockBoisForet         = stockBoisForet;
 
+        // Timer
+        save.tempsRestantMs  = tempsRestantMs;
+        save.dureeTotaleMs   = dureeTotaleMs;
+        save.partieEnCours   = !gameOver;
+
         return save;
     }
 
@@ -383,6 +448,10 @@ public class Map {
         nombreInvocations       = save.nombreInvocations;
         compteurSansCinqEtoiles  = save.compteurSansCinqEtoiles;
         stockBoisForet           = save.stockBoisForet;
+
+        // Timer
+        tempsRestantMs = save.tempsRestantMs;
+        dureeTotaleMs  = save.dureeTotaleMs;
     }
 
     public String ameliorerHotelDeVille() {
@@ -807,6 +876,8 @@ public class Map {
                 mettreAJourPersonnages();
                 nettoyerVoleursInactifs();
                 tenterSpawnVoleur();
+                mettreAJourTimer();
+                verifierFamine();
 
                 try {
                     Thread.sleep(800);

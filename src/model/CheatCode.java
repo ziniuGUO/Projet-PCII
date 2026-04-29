@@ -54,6 +54,19 @@ public class CheatCode {
                 return "✅ Hôtel de Ville monté au niveau " + hdv.getNiveau() + " !";
             }
 
+            case "jaifaim" -> {
+                // Réduit la nourriture à 30
+                int nourr = inventaire.getNourriture();
+                if (nourr > 30) inventaire.retirerRessource(Ressource.Type.NOURRITURE, nourr - 30);
+                return " Nourriture réduite à 30 !";
+            }
+
+            case "plusletime" -> {
+                // Met le timer à 10 secondes
+                gameMap.setTempsRestantMs(10_000L);
+                return " Timer mis à 10 secondes !";
+            }
+
             default -> { return " Code inconnu."; }
         }
     }

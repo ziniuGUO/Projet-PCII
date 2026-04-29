@@ -180,65 +180,13 @@ public class ReactionClic implements MouseMotionListener, MouseListener {
             else {
                 JOptionPane.showMessageDialog(mapPanel, nom + " construit !");
                 if (model.Map.TYPE_STATUE_DRAGON.equals(type)) {
-                    afficherEcranVictoire();
+                    if (onVictoire != null) onVictoire.run();
                 }
             }
             mapPanel.repaint();
         }
     }
 
-    private void afficherEcranVictoire() {
-        JDialog dialog = new JDialog(
-                (JFrame) SwingUtilities.getWindowAncestor(mapPanel),
-                "Victoire !", true);
-        dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
-        dialog.setUndecorated(true);
-
-        JPanel panel = new JPanel(new BorderLayout(0, 20));
-        panel.setBackground(new Color(15, 10, 5));
-        panel.setBorder(BorderFactory.createLineBorder(new Color(220, 130, 0), 4));
-
-        // Titre
-        JLabel titre = new JLabel("🐉  VOUS AVEZ GAGNÉ  🐉", SwingConstants.CENTER);
-        titre.setFont(new Font("Serif", Font.BOLD, 36));
-        titre.setForeground(new Color(255, 200, 30));
-        titre.setBorder(BorderFactory.createEmptyBorder(30, 30, 0, 30));
-
-        // Sous-titre
-        JLabel sousTitre = new JLabel(
-            "<html><center>La Grande Statue du Dragon s'élève sur votre cité.<br>Votre règne est légendaire !</center></html>",
-            SwingConstants.CENTER);
-        sousTitre.setFont(new Font("Serif", Font.ITALIC, 16));
-        sousTitre.setForeground(new Color(210, 180, 100));
-        sousTitre.setBorder(BorderFactory.createEmptyBorder(0, 30, 0, 30));
-
-        // Bouton rejouer
-        JButton btnRejouer = new JButton("⚔  Rejouer");
-        btnRejouer.setFont(new Font("SansSerif", Font.BOLD, 18));
-        btnRejouer.setBackground(new Color(180, 60, 0));
-        btnRejouer.setForeground(Color.WHITE);
-        btnRejouer.setFocusPainted(false);
-        btnRejouer.setBorder(BorderFactory.createEmptyBorder(12, 40, 12, 40));
-        btnRejouer.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnRejouer.addActionListener(e -> {
-            dialog.dispose();
-            if (onVictoire != null) onVictoire.run();
-        });
-
-        JPanel btnPanel = new JPanel();
-        btnPanel.setBackground(new Color(15, 10, 5));
-        btnPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 30, 0));
-        btnPanel.add(btnRejouer);
-
-        panel.add(titre,     BorderLayout.NORTH);
-        panel.add(sousTitre, BorderLayout.CENTER);
-        panel.add(btnPanel,  BorderLayout.SOUTH);
-
-        dialog.setContentPane(panel);
-        dialog.pack();
-        dialog.setLocationRelativeTo(mapPanel);
-        dialog.setVisible(true);
-    }
 
     private void ouvrirDialogueHotelDeVille() {
         int niveau = gameMap.getNiveauHotelDeVille();

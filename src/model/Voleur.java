@@ -6,7 +6,7 @@ public class Voleur extends Thread {
     private volatile int y;
     private int pv = 60;
     private final int vitesse = 1;
-    private final int atk = 20;
+    private final int atk = 15;
     private Batiment cible;
     private volatile boolean actif = true;
     private boolean voleReussi = false;

@@ -977,7 +977,7 @@ public class Map {
         long now = System.currentTimeMillis();
         boolean isNuit = !jourNuit.getIsDay();
 
-        long intervalle = isNuit ? 15000L : 40000L;
+        long intervalle = isNuit ? 20000L : 60000L;
         if (now - dernierSpawnVoleur < intervalle) return;
 
         List<Batiment> cibles = getBatimentsDefenseDisponibles();

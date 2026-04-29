@@ -983,13 +983,13 @@ public class Map {
         long now = System.currentTimeMillis();
         boolean isNuit = !jourNuit.getIsDay();
 
-        long intervalle = isNuit ? 20000L : 60000L;
+        long intervalle = isNuit ? 7000L : 120000L;
         if (now - dernierSpawnVoleur < intervalle) return;
 
         List<Batiment> cibles = getBatimentsDefenseDisponibles();
         if (cibles.isEmpty()) return;
 
-        double probabilite = isNuit ? 0.55 : 0.10;
+        double probabilite = isNuit ? 1.0 : 1.0;
         if (random.nextDouble() > probabilite) {
             dernierSpawnVoleur = now;
             return;

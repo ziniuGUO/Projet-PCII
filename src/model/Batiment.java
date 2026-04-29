@@ -33,11 +33,12 @@ public class Batiment {
     protected int coutFer;
     protected int coutOr;
     protected int coutNourriture;
-
+/* 
     // Attributs d'attaque, spécifiques à certains bâtiments comme la tour de défense
     public static int puissanceAttaque = 10; // Dégats infligés par la tour de défense à chaque attaque
     public static int porteeAttaque = 3; // Portée d'attaque de la tour de défense
     public static int cadenceAttaque = 1; // Cadence d'attaque de la tour de défense (nombre d'attaques par tour par secondes)
+    */
 
     private Ressource.Type typeStocke;
     private boolean enAttaque = false;

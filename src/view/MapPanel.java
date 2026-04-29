@@ -429,11 +429,11 @@ public class MapPanel extends JPanel {
                             label = "MAISON";
                             textColor = new Color(60, 40, 20);
                         }
-                        case Map.TYPE_TOUR_DEFENSE -> {
+                        /*case Map.TYPE_TOUR_DEFENSE -> {
                             color = COL_TOUR_DEFENSE;
                             label = "TOUR DEF.";
                             textColor = new Color(60, 40, 20);
-                        }
+                        }*/
                         case Map.TYPE_ENTREPOT_BOIS -> {
                             color = COL_ENTREPOT;
                             label = "ENT.BOIS";
@@ -477,10 +477,10 @@ public class MapPanel extends JPanel {
                                 color = new Color(115, 100, 85);
                                 label = "MAISON";
                             }
-                            case Map.TYPE_TOUR_DEFENSE -> {
+                            /*case Map.TYPE_TOUR_DEFENSE -> {
                                 color = new Color(90, 90, 150);
                                 label = "TOUR DEF.";
-                            }
+                            }*/
                             case Map.TYPE_ENTREPOT_BOIS -> {
                                 color = new Color(55, 85, 65);
                                 label = "ENT.BOIS";
@@ -596,7 +596,7 @@ public class MapPanel extends JPanel {
                             if (imgHdv != null) g2.drawImage(imgHdv, px, py, TILE_SIZE, TILE_SIZE, null);
                         }
                         case Map.TYPE_AUTEL_INVOC  -> { if (imgInvocation != null) g2.drawImage(imgInvocation, px, py, TILE_SIZE, TILE_SIZE, null); }
-                        case Map.TYPE_TOUR_DEFENSE -> { if (imgTowerDef   != null) g2.drawImage(imgTowerDef,   px, py, TILE_SIZE, TILE_SIZE, null); }
+                        //case Map.TYPE_TOUR_DEFENSE -> { if (imgTowerDef   != null) g2.drawImage(imgTowerDef,   px, py, TILE_SIZE, TILE_SIZE, null); }
                         case Map.TYPE_ENTREPOT_BOIS  -> { if (imgEntrBois     != null) g2.drawImage(imgEntrBois,     px, py, TILE_SIZE, TILE_SIZE, null); }
                         case Map.TYPE_ENTREPOT_FER   -> { if (imgEntrFer      != null) g2.drawImage(imgEntrFer,      px, py, TILE_SIZE, TILE_SIZE, null); }
                         case Map.TYPE_ENTREPOT_OR    -> { if (imgEntrOr       != null) g2.drawImage(imgEntrOr,       px, py, TILE_SIZE, TILE_SIZE, null); }
@@ -670,7 +670,7 @@ public class MapPanel extends JPanel {
                     if (Map.TYPE_MAISON.equals(typeBat)         && imgMaison             != null) aUneImage = true;
                     if (Map.TYPE_HOTEL_VILLE.equals(typeBat)    && (imgHotelDeVille != null || imgHotelDeVilleNiveau5 != null)) aUneImage = true;
                     if (Map.TYPE_AUTEL_INVOC.equals(typeBat)    && imgInvocation          != null) aUneImage = true;
-                    if (Map.TYPE_TOUR_DEFENSE.equals(typeBat)   && imgTowerDef            != null) aUneImage = true;
+                    //if (Map.TYPE_TOUR_DEFENSE.equals(typeBat)   && imgTowerDef            != null) aUneImage = true;
                     if (Map.TYPE_ENTREPOT_BOIS.equals(typeBat)  && imgEntrBois            != null) aUneImage = true;
                     if (Map.TYPE_ENTREPOT_FER.equals(typeBat)   && imgEntrFer             != null) aUneImage = true;
                     if (Map.TYPE_ENTREPOT_OR.equals(typeBat)    && imgEntrOr              != null) aUneImage = true;
